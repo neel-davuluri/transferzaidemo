@@ -204,13 +204,10 @@ def find_matches(external, model, df, embeddings):
     return results
 
 def built_in_catalogs():
-    """
-    Add/remove built-in catalogs here.
-    Only shows catalogs whose files exist on disk.
-    """
+    base_dir = os.path.dirname(os.path.abspath(__file__))  # folder where this .py file lives
     candidates = {
-        "W&M Catalog (2025)": "wm_courses_2025.csv",
-        "Northeastern Catalog": "northeastern_courses.csv",
+        "W&M Catalog (2025)": os.path.join(base_dir, "wm_courses_2025.csv"),
+        "Northeastern Catalog": os.path.join(base_dir, "northeastern_courses.csv"),
     }
     return {label: path for label, path in candidates.items() if os.path.exists(path)}
 
