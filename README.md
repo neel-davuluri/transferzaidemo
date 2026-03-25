@@ -312,4 +312,5 @@ W&M Men's Basketball — to evaluate transfer portal candidates' academic eligib
 
 ## Contact
 
-Neel Davuluri · [LinkedIn](https://linkedin.com/in/YOUR_HANDLE) · [GitHub](https://github.com/YOUR_HANDLE)
+Neel Davuluri 
+Garrett Bellin
