@@ -9,6 +9,7 @@ Functions:
 
 import re, pickle
 import numpy as np
+import os
 from collections import defaultdict
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -113,7 +114,7 @@ def load_artifacts():
 
     # Load BGE model
     print("Loading fine-tuned BGE model...")
-    a["bge_model"] = SentenceTransformer(BGE_MODEL_PATH, device="cpu")
+    a["bge_model"] = SentenceTransformer(BGE_MODEL_PATH, device="cpu", token=os.environ.get("HF_TOKEN"))
     print("Artifacts loaded.")
 
     _artifacts = a

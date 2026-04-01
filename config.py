@@ -1,7 +1,7 @@
 """Configuration constants for TransferZAI v3."""
 
 # Model
-BGE_MODEL_PATH = "./finetuned_bge"
+BGE_MODEL_PATH = "hyperalpha/finetuned-bge"
 QUERY_PREFIX = "Represent this course for finding transfer equivalents: "
 
 # Retrieval
