@@ -11,6 +11,7 @@ import re, pickle
 import numpy as np
 from collections import defaultdict
 from difflib import SequenceMatcher
+from pathlib import Path
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -21,6 +22,11 @@ from config import (
     TOP_K_DISPLAY, HIGH_CONFIDENCE_THRESHOLD, TRANSFER_THRESHOLD,
     DEFAULT_CREDITS_PER_COURSE, MIN_CREDITS_REQUIRED, ARTIFACTS_DIR,
 )
+
+# Ensure artifacts are available
+if not Path(ARTIFACTS_DIR).exists():
+    from download_artifacts import download_artifacts
+    download_artifacts()
 
 
 # ── Text parsing helpers ────────────────────────────────────────────────

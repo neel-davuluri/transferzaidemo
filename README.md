@@ -304,6 +304,40 @@ transfers_ai/
 
 ---
 
+## Quickstart
+
+### Local (Development)
+
+```bash
+# Clone
+git clone https://github.com/neel-davuluri/transferzaidemo.git
+cd transferzaidemo
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Download pre-trained artifacts
+python download_artifacts.py
+
+# Run Streamlit app
+streamlit run app.py
+```
+
+### Streamlit Cloud (Production)
+
+1. Fork the repo on GitHub
+2. Deploy via [Streamlit Cloud](https://streamlit.io/cloud)
+3. If artifacts are missing, download from [releases](https://github.com/neel-davuluri/transferzaidemo/releases), extract, and commit to a separate branch
+
+### Manual artifact setup
+
+If the download script fails:
+1. Download `artifacts.tar.gz` from: https://github.com/neel-davuluri/transferzaidemo/releases
+2. Extract: `tar -xzf artifacts.tar.gz`
+3. Restart the app
+
+---
+
 ## Built For
 
 W&M Men's Basketball — to evaluate transfer portal candidates' academic eligibility before committing recruiting resources.

@@ -20,7 +20,17 @@ st.set_page_config(page_title="TransferzAI", page_icon="🎓", layout="wide")
 # ── Load artifacts once ─────────────────────────────────────────────────
 @st.cache_resource
 def init():
-    return load_artifacts()
+    try:
+        return load_artifacts()
+    except FileNotFoundError as e:
+        st.error(f"Model artifacts not found: {e}")
+        st.info("""
+        **To fix this:**
+        1. Download `artifacts.tar.gz` from: https://github.com/neel-davuluri/transferzaidemo/releases
+        2. Extract: `tar -xzf artifacts.tar.gz`
+        3. Refresh this page
+        """)
+        st.stop()
 
 with st.spinner("Loading model artifacts..."):
     artifacts = init()
