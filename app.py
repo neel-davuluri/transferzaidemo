@@ -404,10 +404,9 @@ with st.spinner("Loading model…"):
 INSTS = {k: v["name"] for k, v in artifacts["institutions"].items()}
 
 INST_LOGOS = {
-    "wm":           "🏛️",
-    "vt":           "🦃",
-    "ucsc":         "🐌",
-    "northeastern": "🐾",
+    "wm":   "🏛️",
+    "vt":   "🦃",
+    "ucsc": "🐌",
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -469,7 +468,7 @@ st.markdown("""
   <div class="tzai-hero-sub">AI-powered transfer credit evaluation across institutions</div>
 </div>""", unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["Single Class Lookup", "Transcript Evaluator", "Model Card"])
+tab1, tab2 = st.tabs(["Single Class Lookup", "Transcript Evaluator"])
 
 
 # ════════════════════════════════════════════════════════════════════════
@@ -709,109 +708,3 @@ with tab2:
         </div>""", unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════════════════════
-# TAB 3 — Model Card
-# ════════════════════════════════════════════════════════════════════════
-with tab3:
-    st.markdown('<span class="tzai-mc-pill">v3 · BGE + XGBoost</span>', unsafe_allow_html=True)
-    left, right = st.columns([3, 2], gap="large")
-
-    with left:
-        st.markdown('<div class="tzai-mc-h">Architecture</div>', unsafe_allow_html=True)
-        st.markdown("""
-**Two-stage retrieve-then-rank pipeline, run per institution.**
-
-**Stage 1 — 3-signal RRF** retrieves top-50 candidates:
-
-| Signal | What it captures |
-|:---|:---|
-| Fine-tuned BGE bi-encoder | Semantic similarity (TripletLoss) |
-| TF-IDF 1–2 gram, 15k features | Lexical keyword overlap |
-| Department prior | P(target dept given source dept) |
-
-**Stage 2 — XGBoost Reranker** scores candidates on 13 features:
-
-| Group | Features |
-|:---|:---|
-| Semantic | BGE cosine sim |
-| Lexical | TF-IDF (full), TF-IDF (title), SequenceMatcher |
-| Structural | Level ratio, same-level flag, dept prior, RRF score |
-| Interactions | BGE×dept, BGE×title, BGE×TF-IDF, dept×title, dept×level |
-
-Per-query softmax over XGBoost margins for calibrated confidence.
-        """)
-        st.markdown('<div class="tzai-mc-h" style="margin-top:1.5rem;">Thresholds</div>', unsafe_allow_html=True)
-        st.markdown(f"""
-| | Threshold | Action |
-|:---|:---|:---|
-| 🟢 High Confidence | ≥ {HIGH_CONFIDENCE_THRESHOLD:.0%} | Transfers as X — ≥ 90% precision |
-| 🟡 Possible Match  | ≥ {TRANSFER_THRESHOLD:.0%} | Advisor review recommended |
-| 🔴 Low Confidence  | < {TRANSFER_THRESHOLD:.0%} | Refer to registrar |
-        """)
-        st.markdown('<div class="tzai-mc-h" style="margin-top:1.5rem;">Training data</div>', unsafe_allow_html=True)
-        st.markdown("""
-| Pair | Train | Test |
-|:---|:---:|:---:|
-| VCCS → W&M | ~267 | 67 |
-| VCCS → VT | ~242 | 60 |
-| CCC → UCSC | ~723 | 181 |
-
-FERPA compliant — no student PII.
-        """)
-        st.markdown("\n".join(
-            f"**{v}** — {len(artifacts['institutions'][k]['codes']):,} courses"
-            for k, v in INSTS.items()
-        ))
-
-    with right:
-        st.markdown('<div class="tzai-mc-h">Performance</div>', unsafe_allow_html=True)
-        sc = artifacts.get("scorecard", {})
-        if sc and any(k in sc for k in ("wm","vt","ucsc")):
-            for inst_key, label in [("wm","William & Mary"),("vt","Virginia Tech"),("ucsc","CCC → UCSC")]:
-                s = sc.get(inst_key, {})
-                if not s: continue
-                t1=s.get("top1_lr",0); t3=s.get("top3_lr",0)
-                pr=s.get("precision_tau",0); cov=s.get("coverage_tau",0)
-                html = f'<div class="tzai-perf-inst"><div class="tzai-perf-inst-name">{label}</div>'
-                for lbl_, v_, good_, warn_ in [
-                    ("Top-1 Recall",t1,0.55,0.45),("Top-3 Recall",t3,0.75,0.60),
-                    ("Precision @ τ",pr,0.90,0.75),("Coverage @ τ",cov,0.20,0.10)]:
-                    col_ = "#4ade80" if v_>=good_ else ("#fbbf24" if v_>=warn_ else "#f87171")
-                    html += (f'<div class="tzai-perf-row">'
-                             f'<div class="tzai-perf-top"><span>{lbl_}</span>'
-                             f'<b style="color:{col_}">{v_:.1%}</b></div>'
-                             f'<div class="tzai-perf-track">'
-                             f'<div class="tzai-perf-fill" style="width:{v_*100:.1f}%;background:{col_}"></div>'
-                             f'</div></div>')
-                html += '</div>'
-                st.markdown(html, unsafe_allow_html=True)
-                st.caption(f"Brier {s.get('brier',0):.4f} · ECE {s.get('ece',0):.4f} · τ={s.get('op_tau',0):.2f}")
-        else:
-            st.info("Run `python scripts/build_artifacts.py` to populate metrics.")
-
-        st.markdown('<div class="tzai-mc-h" style="margin-top:1rem;">Limitations</div>', unsafe_allow_html=True)
-        st.markdown("""
-- Coverage at high precision ~15–25% — system abstains rather than guessing wrong
-- CCC→UCSC top-3 ~68% — smaller training set, 115+ colleges
-- Dept/number are soft signals — optional but improve results
-- Not a registrar decision — always confirm before acting
-        """)
-
-    # ── Diagnostics (temporary) ──
-    with st.expander("🔧 System Diagnostics", expanded=True):
-        diag = artifacts.get("_diag", {})
-        if diag:
-            st.code(
-                f"BUILD: {_ARTIFACT_VERSION}\n"
-                f"Python: {diag.get('python', '?')}\n"
-                f"XGBoost: {diag.get('xgboost', '?')}\n"
-                f"Classifier: {diag.get('classifier_type', '?')}\n"
-                f"n_estimators: {diag.get('n_estimators', '?')}\n"
-                f"num_features: {diag.get('num_features', '?')}\n"
-                f"feature_names: {diag.get('feature_names', '?')}\n"
-                f"artifacts_dir: {diag.get('artifacts_dir', '?')}\n"
-                f"institutions: {list(artifacts.get('institutions', {}).keys())}",
-                language="yaml",
-            )
-        else:
-            st.warning("No diagnostic info available")
