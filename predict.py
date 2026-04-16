@@ -38,7 +38,7 @@ INSTITUTION_REGISTRY = {
     "wm":           {"name": "William & Mary"},
     "vt":           {"name": "Virginia Tech"},
     "ucsc":         {"name": "UC Santa Cruz"},
-    "northeastern": {"name": "Northeastern University"},
+    # "northeastern": {"name": "Northeastern University"},  # disabled: catalog cleanup needed
 }
 
 

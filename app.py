@@ -387,8 +387,7 @@ tr:hover td { background: var(--surface-2) !important; }
 """, unsafe_allow_html=True)
 
 # ── Load ──────────────────────────────────────────────────────────────────────
-_ARTIFACT_VERSION = "2026-04-16-v4"  # bump to force cache invalidation
-st.cache_resource.clear()  # nuclear: wipe ALL cached resources on this deploy
+_ARTIFACT_VERSION = "2026-04-16-v5"  # bump to force cache invalidation
 
 @st.cache_resource(show_spinner=False)
 def init(_version=_ARTIFACT_VERSION):
