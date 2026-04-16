@@ -201,6 +201,27 @@ def load_artifacts():
     else:
         a["dept_prior_map"] = {}
 
+    # Build a cross-institution average prior for institutions not in training data
+    # (e.g. Northeastern). Averages wm/vt/ucsc so cross-dept patterns like
+    # APMA→MATH or MTH→MATH still get reasonable dept_prob values.
+    trained = [p for p in a["dept_prior_map"].values()]
+    if trained:
+        all_src_depts = set(d for p in trained for d in p)
+        avg_prior = {}
+        for src in all_src_depts:
+            tgt_counts: dict = defaultdict(float)
+            n = 0
+            for p in trained:
+                if src in p:
+                    for tgt, prob in p[src].items():
+                        tgt_counts[tgt] += prob
+                    n += 1
+            if n:
+                avg_prior[src] = {tgt: v / n for tgt, v in tgt_counts.items()}
+        a["_avg_dept_prior"] = avg_prior
+    else:
+        a["_avg_dept_prior"] = {}
+
     if (adir / "feature_names.pkl").exists():
         with open(adir / "feature_names.pkl", "rb") as f:
             a["feature_names"] = pickle.load(f)
@@ -369,14 +390,10 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
             continue
         inst = a["institutions"][inst_key]
 
-        # Use per-institution dept prior if available; fall back to identity
-        # prior (dept → same dept: 1.0) for institutions not in training data
-        dept_prior = a["dept_prior_map"].get(inst_key)
-        if not dept_prior:
-            dept_prior = {
-                dept: {dept: 1.0}
-                for dept in set(inst["code_to_dept"].values())
-            }
+        # Use per-institution dept prior if available; fall back to the
+        # cross-institution average prior so patterns like APMA→MATH still score
+        # correctly for institutions not in training data (e.g. Northeastern).
+        dept_prior = a["dept_prior_map"].get(inst_key) or a.get("_avg_dept_prior", {})
 
         candidates = retrieve_candidates(
             vccs_text, vccs_dept, vccs_emb, inst, dept_prior, tfidf, k=RETRIEVAL_K
