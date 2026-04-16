@@ -12,14 +12,14 @@ RRF_K = 60
 DEPT_WEIGHT = 0.5
 TOP_K_DISPLAY = 5
 
-# Thresholds — bias-corrected sigmoid confidence
-# XGBoost trained with scale_pos_weight≈49 (2% positive rate).
-# Subtracting log(49)≈3.89 from each margin shifts the decision boundary to 0.5
-# so probabilities are centered correctly and independent of pool size.
-# Monotone in signal quality: adding correct dept/level never decreases confidence.
-MARGIN_BIAS_CORRECTION = 3.89   # log(scale_pos_weight) ≈ log(49)
-HIGH_CONFIDENCE_THRESHOLD = 0.85
-TRANSFER_THRESHOLD = 0.50
+# Thresholds — softmax confidence over top-K displayed candidates (not all 50).
+# Softmax over K=5 means a winner with margin-gap=3 above competitors shows 85%.
+# A gap=1 (uncertain) shows 55%. Calibrated thresholds for K≈5:
+HIGH_CONFIDENCE_THRESHOLD = 0.65
+TRANSFER_THRESHOLD = 0.35
+
+# Internal K used for softmax normalization (independent of display top_k)
+SOFTMAX_K = 5
 
 # Transcript evaluation
 DEFAULT_CREDITS_PER_COURSE = 3

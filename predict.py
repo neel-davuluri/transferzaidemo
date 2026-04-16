@@ -30,7 +30,7 @@ from config import (
     QUERY_PREFIX, RETRIEVAL_K, RRF_K,
     TOP_K_DISPLAY, HIGH_CONFIDENCE_THRESHOLD, TRANSFER_THRESHOLD,
     DEFAULT_CREDITS_PER_COURSE, MIN_CREDITS_REQUIRED, ARTIFACTS_DIR,
-    MARGIN_BIAS_CORRECTION,
+    SOFTMAX_K,
 )
 
 
@@ -400,15 +400,24 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
             proba   = np.clip(proba, 1e-7, 1 - 1e-7)
             margins = np.log(proba / (1 - proba))
 
-        # Bias-corrected sigmoid confidence.
-        # XGBoost was trained with scale_pos_weight≈49 (≈2% positive rate), which
-        # shifts the effective decision boundary from margin=0 to margin=log(49)≈3.89.
-        # Subtracting MARGIN_BIAS_CORRECTION re-centers it at 0.5, producing
-        # probabilities that are:
-        #   (a) independent of pool size (no softmax dilution when dept is added)
-        #   (b) monotone: adding correct signals only raises the winner's score
-        #   (c) robust to OOD inputs (no iso_cal overfitting to training distribution)
-        conf = 1.0 / (1.0 + np.exp(-(margins - MARGIN_BIAS_CORRECTION)))
+        # Softmax over top-SOFTMAX_K candidates only (not all 50).
+        # Softmax over 50 dilutes confidence when dept boost lifts many same-dept
+        # courses simultaneously. Restricting to top-5 means a winner with a
+        # margin gap of 3 shows 85% instead of 33%, which is far more accurate.
+        # Monotone: better signals raise the winner's margin → always improves rank.
+        n_soft  = min(SOFTMAX_K, len(margins))
+        top_idx = np.argsort(margins)[::-1]          # all 50, sorted best→worst
+        soft_margins = margins[top_idx[:n_soft]]
+        soft_vals    = np.exp(soft_margins - soft_margins.max())
+        soft_vals   /= soft_vals.sum()               # stable softmax over top-K
+        conf = np.zeros(len(margins))
+        for rank, idx in enumerate(top_idx[:n_soft]):
+            conf[idx] = soft_vals[rank]
+        # candidates outside the top-K get a small residual (not displayed)
+        if n_soft < len(margins):
+            residual = (1.0 - soft_vals.sum()) / max(1, len(margins) - n_soft)
+            for idx in top_idx[n_soft:]:
+                conf[idx] = residual
 
         inst_results = []
         for i, (cand_code, rrf_score, sigs) in enumerate(cand_info_list):
@@ -430,7 +439,7 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
                 "signals":          sigs,
             })
 
-        # Sort by confidence (monotone in margin, same order as softmax)
+        # Sort by confidence (same order as sorting by margin)
         inst_results.sort(key=lambda x: -x["confidence"])
         results[inst_key] = inst_results[:top_k]
 
