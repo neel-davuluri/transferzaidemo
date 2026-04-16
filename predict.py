@@ -352,7 +352,7 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
                 vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title_c,
                 cand_code, rrf_score, inst, inst_key, dept_prior, tfidf
             )
-            feat_vec = [sigs[fn] for fn in feature_names]
+            feat_vec = [sigs.get(fn, 0.0) for fn in feature_names]
             feat_vecs.append(feat_vec)
             cand_info_list.append((cand_code, rrf_score, sigs))
 
