@@ -14,330 +14,487 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Design system ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-  /* ── tokens ── */
-  :root {
-    --bg:          #0d1117;
-    --surface:     #161b22;
-    --surface-2:   #1c2128;
-    --border:      #30363d;
-    --border-sub:  #21262d;
-    --accent:      #2f81f7;
-    --text-1:      #e6edf3;
-    --text-2:      #8b949e;
-    --text-3:      #484f58;
-    --green:       #3fb950;
-    --green-dim:   rgba(63,185,80,0.12);
-    --amber:       #d29922;
-    --amber-dim:   rgba(210,153,34,0.12);
-    --red:         #f85149;
-    --red-dim:     rgba(248,81,73,0.12);
-    --radius:      10px;
-    --radius-sm:   6px;
-  }
+/* ── tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --bg:         #090c10;
+  --surface:    #0d1117;
+  --surface-2:  #161b22;
+  --surface-3:  #1c2128;
+  --border:     #21262d;
+  --border-2:   #30363d;
+  --accent:     #58a6ff;
+  --accent-dim: rgba(88,166,255,0.12);
+  --text-1:     #f0f6fc;
+  --text-2:     #8b949e;
+  --text-3:     #3d444d;
+  --green:      #3fb950;
+  --green-bg:   rgba(63,185,80,0.10);
+  --amber:      #d29922;
+  --amber-bg:   rgba(210,153,34,0.10);
+  --red:        #f85149;
+  --red-bg:     rgba(248,81,73,0.10);
+  --radius:     8px;
+  --radius-lg:  12px;
+}
 
-  /* ── global reset ── */
-  [data-testid="stAppViewContainer"] { background: var(--bg) !important; }
-  [data-testid="stHeader"]           { background: transparent !important; border-bottom: 1px solid var(--border-sub); }
-  .block-container { padding-top: 1.5rem !important; padding-bottom: 4rem !important; max-width: 1200px !important; }
-  section[data-testid="stSidebar"]   { background: var(--surface) !important; }
+/* ── reset ───────────────────────────────────────────────────────────── */
+[data-testid="stAppViewContainer"] { background: var(--bg) !important; }
+[data-testid="stHeader"]           { display: none !important; }
+.block-container {
+  padding: 2rem 2rem 6rem !important;
+  max-width: 860px !important;
+  margin: 0 auto !important;
+}
+#MainMenu, footer { display: none !important; }
+* { box-sizing: border-box; }
 
-  /* ── hide streamlit branding ── */
-  #MainMenu, footer, [data-testid="stToolbar"] { visibility: hidden; }
+/* ── global type ─────────────────────────────────────────────────────── */
+html, body, [class*="css"] {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif !important;
+  color: var(--text-1);
+}
+p, li { color: var(--text-2); font-size: 0.88rem; line-height: 1.65; }
+h1,h2,h3,h4,h5 { color: var(--text-1) !important; letter-spacing: -0.4px; }
 
-  /* ── typography ── */
-  html, body, [class*="css"] { color: var(--text-1); }
-  h1,h2,h3,h4 { color: var(--text-1) !important; letter-spacing: -0.3px; }
+/* ── tabs ────────────────────────────────────────────────────────────── */
+[data-testid="stTabs"] { border-bottom: 1px solid var(--border) !important; margin-bottom: 0 !important; }
+[data-baseweb="tab-list"] { background: transparent !important; gap: 0 !important; padding: 0 !important; }
+[data-baseweb="tab"] {
+  background: transparent !important;
+  color: var(--text-2) !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  padding: 0.65rem 1.1rem !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  transition: color .15s;
+}
+[data-baseweb="tab"]:hover { color: var(--text-1) !important; }
+[aria-selected="true"][data-baseweb="tab"] {
+  color: var(--text-1) !important;
+  border-bottom-color: var(--accent) !important;
+}
+[data-testid="stTabPanel"] { padding-top: 2rem !important; }
 
-  /* ── nav / tabs ── */
-  [data-testid="stTabs"] { border-bottom: 1px solid var(--border); }
-  [data-baseweb="tab-list"] { background: transparent !important; gap: 0; }
-  [data-baseweb="tab"] {
-    background: transparent !important;
-    color: var(--text-2) !important;
-    font-size: 0.9rem; font-weight: 600;
-    padding: 0.6rem 1.2rem !important;
-    border-bottom: 2px solid transparent !important;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  [data-baseweb="tab"]:hover { color: var(--text-1) !important; }
-  [aria-selected="true"][data-baseweb="tab"] {
-    color: var(--text-1) !important;
-    border-bottom: 2px solid var(--accent) !important;
-  }
-  [data-testid="stTabPanel"] { padding-top: 1.5rem !important; }
+/* ── inputs ──────────────────────────────────────────────────────────── */
+.stTextInput input, .stTextArea textarea, .stNumberInput input {
+  background: var(--surface) !important;
+  border: 1px solid var(--border-2) !important;
+  border-radius: var(--radius) !important;
+  color: var(--text-1) !important;
+  font-size: 0.9rem !important;
+  transition: border-color .15s, box-shadow .15s;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-dim) !important;
+  outline: none !important;
+}
+.stTextInput label, .stTextArea label, .stNumberInput label,
+.stSlider label, .stMultiSelect label, label {
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: var(--text-3) !important;
+}
 
-  /* ── inputs ── */
-  .stTextInput input, .stTextArea textarea, .stNumberInput input {
-    background: var(--surface) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius-sm) !important;
-    color: var(--text-1) !important;
-    font-size: 0.9rem !important;
-  }
-  .stTextInput input:focus, .stTextArea textarea:focus {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px rgba(47,129,247,0.15) !important;
-  }
-  label, .stTextInput label, .stTextArea label, .stNumberInput label,
-  .stSlider label, .stMultiSelect label {
-    color: var(--text-2) !important;
-    font-size: 0.8rem !important;
-    font-weight: 600 !important;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
+/* ── hero search input (override default sizing) ─────────────────────── */
+[data-testid="tzai-hero-input"] input {
+  font-size: 1.05rem !important;
+  padding: 0.8rem 1rem !important;
+  height: auto !important;
+}
 
-  /* ── multiselect ── */
-  [data-baseweb="select"] > div {
-    background: var(--surface) !important;
-    border-color: var(--border) !important;
-    border-radius: var(--radius-sm) !important;
-  }
-  [data-baseweb="tag"] {
-    background: var(--surface-2) !important;
-    border-color: var(--border) !important;
-  }
+/* ── buttons ─────────────────────────────────────────────────────────── */
+.stButton > button {
+  border-radius: var(--radius) !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  transition: all .15s !important;
+  border: 1px solid var(--border-2) !important;
+  background: var(--surface-2) !important;
+  color: var(--text-2) !important;
+}
+.stButton > button:hover {
+  border-color: var(--border-2) !important;
+  color: var(--text-1) !important;
+  background: var(--surface-3) !important;
+}
+.stButton > button[kind="primary"] {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+.stButton > button[kind="primary"]:hover {
+  background: #79b8ff !important;
+  border-color: #79b8ff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(88,166,255,0.25) !important;
+}
 
-  /* ── slider ── */
-  [data-testid="stSlider"] [data-baseweb="slider"] div[role="slider"] {
-    background: var(--accent) !important;
-    border-color: var(--accent) !important;
-  }
+/* ── multiselect ─────────────────────────────────────────────────────── */
+[data-baseweb="select"] > div {
+  background: var(--surface) !important;
+  border: 1px solid var(--border-2) !important;
+  border-radius: var(--radius) !important;
+}
+[data-baseweb="tag"] {
+  background: var(--surface-3) !important;
+  border: 1px solid var(--border-2) !important;
+  border-radius: 9999px !important;
+}
+[data-baseweb="tag"] span { color: var(--text-1) !important; font-size: 0.78rem !important; }
 
-  /* ── primary button ── */
-  .stButton > button[kind="primary"] {
-    background: var(--accent) !important;
-    border: none !important;
-    border-radius: var(--radius-sm) !important;
-    color: #fff !important;
-    font-weight: 700 !important;
-    font-size: 0.9rem !important;
-    padding: 0.55rem 1.5rem !important;
-    transition: background 0.15s, transform 0.1s;
-  }
-  .stButton > button[kind="primary"]:hover {
-    background: #388bfd !important;
-    transform: translateY(-1px);
-  }
-  .stButton > button[kind="primary"]:active { transform: translateY(0); }
+/* ── expander ────────────────────────────────────────────────────────── */
+[data-testid="stExpander"] {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  background: transparent !important;
+}
+[data-testid="stExpander"] summary {
+  color: var(--text-3) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em;
+}
+[data-testid="stExpander"] summary:hover { color: var(--text-2) !important; }
 
-  /* ── secondary button ── */
-  .stButton > button[kind="secondary"] {
-    background: transparent !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius-sm) !important;
-    color: var(--text-1) !important;
-    font-weight: 600 !important;
-  }
+/* ── metric ──────────────────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  padding: 0.85rem 1rem !important;
+}
+[data-testid="stMetricLabel"] {
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: var(--text-3) !important;
+}
+[data-testid="stMetricValue"] {
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  color: var(--text-1) !important;
+  letter-spacing: -0.5px;
+}
 
-  /* ── expander ── */
-  [data-testid="stExpander"] {
-    background: var(--surface) !important;
-    border: 1px solid var(--border-sub) !important;
-    border-radius: var(--radius-sm) !important;
-  }
-  [data-testid="stExpander"] summary { color: var(--text-2) !important; font-size: 0.82rem !important; }
+/* ── divider ─────────────────────────────────────────────────────────── */
+hr { border: none !important; border-top: 1px solid var(--border) !important; margin: 1.75rem 0 !important; }
 
-  /* ── metric ── */
-  [data-testid="stMetric"] {
-    background: var(--surface) !important;
-    border: 1px solid var(--border-sub) !important;
-    border-radius: var(--radius) !important;
-    padding: 0.9rem 1rem !important;
-  }
-  [data-testid="stMetricLabel"] { color: var(--text-2) !important; font-size: 0.78rem !important; font-weight: 600 !important; text-transform: uppercase; letter-spacing: 0.05em; }
-  [data-testid="stMetricValue"] { color: var(--text-1) !important; font-size: 1.4rem !important; font-weight: 700 !important; }
+/* ── number input buttons ────────────────────────────────────────────── */
+[data-testid="stNumberInput"] button {
+  background: var(--surface-2) !important;
+  border-color: var(--border-2) !important;
+  color: var(--text-2) !important;
+}
 
-  /* ── divider ── */
-  hr { border-color: var(--border-sub) !important; margin: 1.5rem 0 !important; }
+/* ── tables ──────────────────────────────────────────────────────────── */
+table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+th {
+  background: var(--surface-2) !important;
+  color: var(--text-3) !important;
+  font-size: 0.68rem !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.55rem 0.75rem !important;
+  border-bottom: 1px solid var(--border-2) !important;
+  text-align: left !important;
+}
+td {
+  padding: 0.55rem 0.75rem !important;
+  color: var(--text-2) !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-size: 0.85rem;
+}
+tr:last-child td { border-bottom: none !important; }
+tr:hover td { background: var(--surface-2) !important; }
 
-  /* ── alerts ── */
-  [data-testid="stAlert"] { border-radius: var(--radius-sm) !important; }
+/* ─────────────────────────────────────────────────────────────────────
+   CUSTOM COMPONENTS
+──────────────────────────────────────────────────────────────────────── */
 
-  /* ── number_input buttons ── */
-  [data-testid="stNumberInput"] button {
-    background: var(--surface-2) !important;
-    border-color: var(--border) !important;
-    color: var(--text-1) !important;
-  }
+/* ── wordmark ────────────────────────────────────────────────────────── */
+.tzai-wordmark {
+  display: flex; align-items: baseline; gap: 0.5rem;
+  padding: 2.5rem 0 0.4rem;
+}
+.tzai-wordmark-logo {
+  font-size: 1.5rem; line-height: 1;
+}
+.tzai-wordmark-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -0.5px;
+}
+.tzai-wordmark-tag {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  font-weight: 400;
+  letter-spacing: 0;
+}
 
-  /* ─────────────────────────────────────────────────────────
-     CUSTOM COMPONENTS
-  ───────────────────────────────────────────────────────── */
+/* ── example chips ───────────────────────────────────────────────────── */
+.tzai-examples { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+.tzai-chip {
+  display: inline-block;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 9999px;
+  padding: 0.3em 0.85em;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+.tzai-chip:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
+  color: var(--text-1);
+}
+.tzai-chip-label {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 0.5rem;
+}
 
-  /* ── hero ── */
-  .tzai-hero {
-    padding: 2rem 0 2.5rem;
-    display: flex; align-items: center; gap: 1rem;
-  }
-  .tzai-hero-icon { font-size: 2.2rem; line-height: 1; }
-  .tzai-hero-title {
-    font-size: 1.9rem; font-weight: 800;
-    color: var(--text-1); letter-spacing: -0.5px; margin: 0;
-    line-height: 1.1;
-  }
-  .tzai-hero-sub {
-    font-size: 0.9rem; color: var(--text-2); margin: 0.2rem 0 0;
-  }
+/* ── pill toggles for institutions ──────────────────────────────────── */
+.tzai-pill-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
+.tzai-pill {
+  display: inline-block;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: 9999px;
+  padding: 0.28em 0.85em;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--text-2); cursor: pointer;
+  transition: all .15s;
+}
+.tzai-pill.on {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
-  /* ── section label ── */
-  .tzai-section-label {
-    font-size: 0.72rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--text-3); margin-bottom: 0.75rem;
-  }
+/* ── search card ─────────────────────────────────────────────────────── */
+.tzai-search-card {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.25rem 1rem;
+  margin-bottom: 1.5rem;
+}
 
-  /* ── result card ── */
-  .tzai-card {
-    background: var(--surface);
-    border: 1px solid var(--border-sub);
-    border-left: 3px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.9rem 1.1rem;
-    margin-bottom: 0.6rem;
-    transition: border-color 0.15s;
-  }
-  .tzai-card.high { border-left-color: var(--green); }
-  .tzai-card.mid  { border-left-color: var(--amber); }
-  .tzai-card.low  { border-left-color: var(--red);   }
+/* ── result: featured (top match) ───────────────────────────────────── */
+.tzai-result-featured {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+.tzai-result-featured.high { border-left: 3px solid var(--green); }
+.tzai-result-featured.mid  { border-left: 3px solid var(--amber); }
+.tzai-result-featured.low  { border-left: 3px solid var(--red);   }
 
-  .tzai-card-top {
-    display: flex; align-items: center;
-    justify-content: space-between; gap: 0.5rem;
-  }
-  .tzai-card-code {
-    font-size: 1rem; font-weight: 700;
-    color: var(--text-1); font-family: ui-monospace, monospace;
-    letter-spacing: 0.02em;
-  }
-  .tzai-card-title {
-    font-size: 0.85rem; color: var(--text-2);
-    margin: 0.25rem 0 0.4rem;
-    line-height: 1.4;
-  }
-  .tzai-card-verdict {
-    font-size: 0.82rem; font-weight: 600;
-    display: flex; align-items: center; gap: 0.4rem;
-  }
-  .tzai-card-verdict.high { color: var(--green); }
-  .tzai-card-verdict.mid  { color: var(--amber); }
-  .tzai-card-verdict.low  { color: var(--text-3); }
+.tzai-result-meta {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+.tzai-result-code {
+  font-family: ui-monospace, "SFMono-Regular", "Fira Code", monospace;
+  font-size: 1.05rem; font-weight: 700;
+  color: var(--text-1); letter-spacing: 0.03em;
+}
+.tzai-result-conf {
+  font-size: 1.1rem; font-weight: 800;
+  letter-spacing: -0.5px; flex-shrink: 0;
+}
+.tzai-result-conf.high { color: var(--green); }
+.tzai-result-conf.mid  { color: var(--amber); }
+.tzai-result-conf.low  { color: var(--text-3); }
 
-  /* ── badge ── */
-  .tzai-badge {
-    display: inline-flex; align-items: center; gap: 0.3em;
-    border-radius: 9999px; padding: 0.2em 0.65em;
-    font-size: 0.72rem; font-weight: 700;
-    letter-spacing: 0.03em; white-space: nowrap; flex-shrink: 0;
-  }
-  .tzai-badge.high { background: var(--green-dim); color: var(--green); }
-  .tzai-badge.mid  { background: var(--amber-dim); color: var(--amber); }
-  .tzai-badge.low  { background: var(--red-dim);   color: var(--red);   }
+.tzai-result-title {
+  font-size: 0.85rem; color: var(--text-2);
+  margin-bottom: 0.45rem; line-height: 1.4;
+}
+.tzai-result-verdict {
+  font-size: 0.78rem; font-weight: 600;
+  display: flex; align-items: center; gap: 0.35rem;
+}
+.tzai-result-verdict.high { color: var(--green); }
+.tzai-result-verdict.mid  { color: var(--amber); }
+.tzai-result-verdict.low  { color: var(--text-3); }
 
-  /* ── institution heading ── */
-  .tzai-inst-head {
-    font-size: 0.72rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--text-3);
-    padding-bottom: 0.6rem;
-    margin-bottom: 0.6rem;
-    border-bottom: 1px solid var(--border-sub);
-  }
+/* ── result: secondary (rank 2+) ─────────────────────────────────────── */
+.tzai-result-sub {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.65rem 1rem;
+  margin-bottom: 0.35rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  opacity: 0.75;
+  transition: opacity .15s;
+}
+.tzai-result-sub:hover { opacity: 1; }
+.tzai-result-sub-code {
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  font-size: 0.85rem; font-weight: 700;
+  color: var(--text-1); flex-shrink: 0; width: 90px;
+}
+.tzai-result-sub-title {
+  font-size: 0.82rem; color: var(--text-2); flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tzai-result-sub-conf {
+  font-size: 0.78rem; font-weight: 700;
+  flex-shrink: 0;
+}
+.tzai-result-sub-conf.high { color: var(--green); }
+.tzai-result-sub-conf.mid  { color: var(--amber); }
+.tzai-result-sub-conf.low  { color: var(--text-3); }
 
-  /* ── empty state ── */
-  .tzai-empty {
-    text-align: center; padding: 4rem 1rem;
-    color: var(--text-3);
-  }
-  .tzai-empty .ico { font-size: 2rem; margin-bottom: 0.75rem; }
-  .tzai-empty p { font-size: 0.88rem; margin: 0; color: var(--text-3); }
+/* ── inst section heading ────────────────────────────────────────────── */
+.tzai-inst-head {
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-3);
+  margin: 1.5rem 0 0.75rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.tzai-inst-head::after {
+  content: ""; flex: 1;
+  height: 1px; background: var(--border);
+}
 
-  /* ── summary banner ── */
-  .tzai-banner {
-    border-radius: var(--radius);
-    padding: 1rem 1.25rem; margin-bottom: 1rem;
-    border: 1px solid;
-  }
-  .tzai-banner.eligible   { background: var(--green-dim); border-color: var(--green); }
-  .tzai-banner.borderline { background: var(--amber-dim); border-color: var(--amber); }
-  .tzai-banner.ineligible { background: var(--red-dim);   border-color: var(--red);   }
-  .tzai-banner-text { font-size: 0.92rem; font-weight: 600; color: var(--text-1); margin: 0; }
+/* ── empty state ─────────────────────────────────────────────────────── */
+.tzai-empty {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+}
+.tzai-empty-ico { font-size: 2rem; margin-bottom: 0.75rem; }
+.tzai-empty-title {
+  font-size: 0.95rem; font-weight: 600;
+  color: var(--text-2); margin-bottom: 0.35rem;
+}
+.tzai-empty-sub {
+  font-size: 0.82rem; color: var(--text-3);
+}
 
-  /* ── transcript row ── */
-  .tzai-tr-row {
-    display: flex; align-items: center; gap: 0.75rem;
-    padding: 0.55rem 0;
-    border-bottom: 1px solid var(--border-sub);
-    font-size: 0.85rem;
-  }
-  .tzai-tr-row:last-child { border-bottom: none; }
-  .tzai-tr-label { color: var(--text-1); font-weight: 600; flex: 1 1 220px; min-width: 0; }
-  .tzai-tr-arrow { color: var(--text-3); flex-shrink: 0; }
-  .tzai-tr-match { color: var(--text-2); flex: 1 1 180px; font-family: ui-monospace, monospace; font-size: 0.82rem; }
-  .tzai-tr-conf  { flex-shrink: 0; font-weight: 700; font-size: 0.82rem; }
-  .tzai-tr-conf.high { color: var(--green); }
-  .tzai-tr-conf.mid  { color: var(--amber); }
-  .tzai-tr-conf.low  { color: var(--text-3); }
+/* ── summary banner ──────────────────────────────────────────────────── */
+.tzai-banner {
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1rem;
+  font-size: 0.88rem; font-weight: 600;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.tzai-banner.eligible   { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.25); }
+.tzai-banner.borderline { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(210,153,34,0.25); }
+.tzai-banner.ineligible { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(248,81,73,0.25); }
 
-  /* ── stat pill ── */
-  .tzai-stat-row { display:flex; gap:0.6rem; margin-bottom:1rem; flex-wrap:wrap; }
-  .tzai-stat {
-    background: var(--surface-2);
-    border: 1px solid var(--border-sub);
-    border-radius: var(--radius);
-    padding: 0.65rem 1rem; flex: 1 1 100px; min-width: 90px;
-  }
-  .tzai-stat-val { font-size: 1.5rem; font-weight: 700; color: var(--text-1); line-height:1; }
-  .tzai-stat-lbl { font-size: 0.72rem; font-weight: 600; color: var(--text-3);
-                   text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.3rem; }
+/* ── transcript row ──────────────────────────────────────────────────── */
+.tzai-tr {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.83rem;
+}
+.tzai-tr:last-child { border-bottom: none; }
+.tzai-tr-source { color: var(--text-1); font-weight: 600; flex: 1 1 200px; min-width: 0; }
+.tzai-tr-arrow  { color: var(--text-3); flex-shrink: 0; font-size: 0.75rem; }
+.tzai-tr-target {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem; color: var(--text-2);
+  flex: 0 0 120px;
+}
+.tzai-tr-pct { font-weight: 700; font-size: 0.8rem; flex-shrink: 0; min-width: 36px; text-align: right; }
+.tzai-tr-pct.high { color: var(--green); }
+.tzai-tr-pct.mid  { color: var(--amber); }
+.tzai-tr-pct.low  { color: var(--text-3); }
 
-  /* ── perf bar ── */
-  .tzai-perf-row { margin-bottom: 0.7rem; }
-  .tzai-perf-label { font-size: 0.78rem; color: var(--text-2); margin-bottom: 0.25rem;
-                     display: flex; justify-content: space-between; }
-  .tzai-perf-label b { color: var(--text-1); }
-  .tzai-perf-track { background: var(--surface-2); border-radius: 9999px; height: 6px; }
-  .tzai-perf-fill  { height: 6px; border-radius: 9999px; }
+/* ── perf block ──────────────────────────────────────────────────────── */
+.tzai-perf-inst { margin-bottom: 1.5rem; }
+.tzai-perf-inst-name {
+  font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-3); margin-bottom: 0.7rem;
+}
+.tzai-perf-row { margin-bottom: 0.6rem; }
+.tzai-perf-top {
+  display: flex; justify-content: space-between;
+  font-size: 0.78rem; margin-bottom: 0.2rem;
+}
+.tzai-perf-top span { color: var(--text-2); }
+.tzai-perf-top b    { font-weight: 700; }
+.tzai-perf-track { background: var(--surface-3); border-radius: 9999px; height: 5px; }
+.tzai-perf-fill  { height: 5px; border-radius: 9999px; transition: width .4s; }
 
-  /* ── model card section ── */
-  .tzai-mc-section { margin-bottom: 2rem; }
-  .tzai-mc-title {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.08em; color: var(--accent);
-    margin-bottom: 0.75rem; padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-sub);
-  }
+/* ── section label ───────────────────────────────────────────────────── */
+.tzai-label {
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--text-3); margin-bottom: 0.65rem;
+}
 
-  /* ── table override ── */
-  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  th {
-    background: var(--surface-2) !important; color: var(--text-2) !important;
-    font-size: 0.72rem !important; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.06em; padding: 0.5rem 0.75rem !important;
-    border-bottom: 1px solid var(--border) !important;
-    text-align: left !important;
-  }
-  td {
-    padding: 0.55rem 0.75rem !important; color: var(--text-1) !important;
-    border-bottom: 1px solid var(--border-sub) !important;
-  }
-  tr:last-child td { border-bottom: none !important; }
-  tr:hover td { background: var(--surface-2) !important; }
+/* ── col header (transcript table) ──────────────────────────────────── */
+.tzai-col-hdr {
+  font-size: 0.65rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-3); padding-bottom: 0.3rem;
+}
 
-  /* ── course input header row ── */
-  .tzai-col-header {
-    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.07em; color: var(--text-3);
-    padding: 0 0.15rem 0.4rem;
-  }
+/* ── model card ──────────────────────────────────────────────────────── */
+.tzai-mc-pill {
+  display: inline-block;
+  background: var(--accent-dim);
+  border: 1px solid rgba(88,166,255,0.2);
+  border-radius: 9999px;
+  padding: 0.2em 0.7em;
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.04em;
+  margin-bottom: 1rem;
+}
+.tzai-mc-h {
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--accent); padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.9rem;
+}
+
+/* ── skeleton loader ─────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+.tzai-skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius);
+  height: 80px; margin-bottom: 0.5rem;
+}
+.tzai-skeleton-sm { height: 48px; }
 </style>
 """, unsafe_allow_html=True)
 
-
-# ── Load artifacts ────────────────────────────────────────────────────────────
+# ── Load ──────────────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def init():
     try:
@@ -350,197 +507,222 @@ def init():
 with st.spinner("Loading model…"):
     artifacts = init()
 
-loaded_institutions = {k: v["name"] for k, v in artifacts["institutions"].items()}
-
-
-# ── Hero ──────────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="tzai-hero">
-  <div class="tzai-hero-icon">🎓</div>
-  <div>
-    <p class="tzai-hero-title">TransferzAI</p>
-    <p class="tzai-hero-sub">AI-powered transfer credit evaluation across institutions</p>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-
-# ── Tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["Course Lookup", "Transcript Evaluator", "Model Card"])
-
+INSTS = {k: v["name"] for k, v in artifacts["institutions"].items()}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
 def _cls(conf):
     if conf >= HIGH_CONFIDENCE_THRESHOLD: return "high"
     if conf >= TRANSFER_THRESHOLD:        return "mid"
     return "low"
 
-def _badge_html(conf):
-    cls   = _cls(conf)
-    dots  = {"high": "●", "mid": "●", "low": "●"}
-    label = {"high": "High Confidence", "mid": "Possible Match", "low": "Low Confidence"}
-    return (f'<span class="tzai-badge {cls}">'
-            f'{dots[cls]}&nbsp;{label[cls]}&nbsp;·&nbsp;{conf:.0%}</span>')
-
-def _verdict_html(conf, code):
+def _verdict(conf, code):
     if conf >= HIGH_CONFIDENCE_THRESHOLD:
-        return f'<span class="tzai-card-verdict high">✓ Transfers as {code}</span>'
+        return f'<span class="tzai-result-verdict high">✓ Transfers as {code}</span>'
     if conf >= TRANSFER_THRESHOLD:
-        return '<span class="tzai-card-verdict mid">⚠ Advisor review recommended</span>'
-    return '<span class="tzai-card-verdict low">– Low confidence</span>'
+        return '<span class="tzai-result-verdict mid">~ Advisor review recommended</span>'
+    return '<span class="tzai-result-verdict low">– Low confidence</span>'
 
-def render_result(r, idx):
-    cls  = _cls(r["confidence"])
-    html = f"""
-    <div class="tzai-card {cls}">
-      <div class="tzai-card-top">
-        <span class="tzai-card-code">{r['code']}</span>
-        {_badge_html(r['confidence'])}
-      </div>
-      <div class="tzai-card-title">{r['title']}</div>
-      {_verdict_html(r['confidence'], r['code'])}
-    </div>"""
-    st.markdown(html, unsafe_allow_html=True)
-    with st.expander("Signal breakdown", expanded=False):
-        sigs = r["signals"]
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Semantic (BGE)",  f"{sigs['bge_sim']:.3f}")
-        c2.metric("Lexical (TF-IDF)",f"{sigs['tfidf_sim']:.3f}")
-        c3.metric("Dept Prior",      f"{sigs['dept_prob']:.3f}")
-        c4.metric("Title Match",     f"{sigs['title_sim']:.3f}")
+def render_results(results, selected):
+    for inst_key in selected:
+        name = INSTS.get(inst_key, inst_key)
+        rows = results.get(inst_key, [])
+        st.markdown(f'<div class="tzai-inst-head">{name}</div>', unsafe_allow_html=True)
+        if not rows:
+            st.markdown('<p style="color:var(--text-3);font-size:0.82rem;">No matches found.</p>',
+                        unsafe_allow_html=True)
+            continue
 
-def _conf_cls(conf):
-    if conf >= HIGH_CONFIDENCE_THRESHOLD: return "high"
-    if conf >= TRANSFER_THRESHOLD:        return "mid"
-    return "low"
+        # Top result — featured card
+        r0  = rows[0]
+        c0  = r0["confidence"]
+        cls = _cls(c0)
+        st.markdown(f"""
+        <div class="tzai-result-featured {cls}">
+          <div class="tzai-result-meta">
+            <span class="tzai-result-code">{r0['code']}</span>
+            <span class="tzai-result-conf {cls}">{c0:.0%}</span>
+          </div>
+          <div class="tzai-result-title">{r0['title']}</div>
+          {_verdict(c0, r0['code'])}
+        </div>""", unsafe_allow_html=True)
+        with st.expander("Signal breakdown", expanded=False):
+            sigs = r0["signals"]
+            a, b, c, d = st.columns(4)
+            a.metric("Semantic",  f"{sigs['bge_sim']:.3f}")
+            b.metric("Lexical",   f"{sigs['tfidf_sim']:.3f}")
+            c.metric("Dept Prior",f"{sigs['dept_prob']:.3f}")
+            d.metric("Title",     f"{sigs['title_sim']:.3f}")
 
-def _perf_bar(v, good, warn=0.55):
-    color = "#3fb950" if v >= good else ("#d29922" if v >= warn else "#f85149")
-    return (f'<div class="tzai-perf-track">'
-            f'<div class="tzai-perf-fill" style="width:{v*100:.1f}%;background:{color};"></div>'
-            f'</div>')
+        # Subsequent results — compact rows
+        if len(rows) > 1:
+            sub_html = ""
+            for r in rows[1:]:
+                c = r["confidence"]
+                sub_html += f"""
+                <div class="tzai-result-sub">
+                  <span class="tzai-result-sub-code">{r['code']}</span>
+                  <span class="tzai-result-sub-title">{r['title']}</span>
+                  <span class="tzai-result-sub-conf {_cls(c)}">{c:.0%}</span>
+                </div>"""
+            st.markdown(sub_html, unsafe_allow_html=True)
 
+
+# ── Wordmark ──────────────────────────────────────────────────────────────────
+st.markdown("""
+<div class="tzai-wordmark">
+  <span class="tzai-wordmark-logo">🎓</span>
+  <span class="tzai-wordmark-name">TransferzAI</span>
+  <span class="tzai-wordmark-tag">transfer credit intelligence</span>
+</div>""", unsafe_allow_html=True)
+
+tab1, tab2, tab3 = st.tabs(["Lookup", "Transcript", "Model Card"])
+
+EXAMPLES = [
+    ("Calculus I", "MTH", "263"),
+    ("General Chemistry", "CHM", "101"),
+    ("Introduction to Programming", "CSC", "221"),
+    ("College Composition", "ENG", "111"),
+    ("Microeconomics", "ECO", "201"),
+]
 
 # ════════════════════════════════════════════════════════════════════════
-# TAB 1 — Course Lookup
+# TAB 1 — Lookup
 # ════════════════════════════════════════════════════════════════════════
 with tab1:
-    form_col, settings_col = st.columns([5, 3], gap="large")
 
-    with form_col:
-        st.markdown('<div class="tzai-section-label">Course details</div>', unsafe_allow_html=True)
-        vccs_title = st.text_input(
-            "Course Title",
-            value="",
-            placeholder="e.g. Calculus I, General Chemistry, Intro to Psychology",
-        )
-        vccs_desc = st.text_area(
-            "Course Description",
-            value="",
-            placeholder="Paste the catalog description for higher accuracy (optional)",
-            height=80,
-        )
-        dc, nc = st.columns(2)
-        with dc:
+    # Institution pill toggles (stored in session state)
+    if "sel_insts" not in st.session_state:
+        st.session_state.sel_insts = list(INSTS.keys())
+
+    st.markdown('<div class="tzai-label">Target institutions</div>', unsafe_allow_html=True)
+    inst_cols = st.columns(len(INSTS))
+    for i, (k, name) in enumerate(INSTS.items()):
+        with inst_cols[i]:
+            active = k in st.session_state.sel_insts
+            if st.button(name, key=f"pill_{k}",
+                         type="primary" if active else "secondary",
+                         use_container_width=True):
+                if active and len(st.session_state.sel_insts) > 1:
+                    st.session_state.sel_insts.remove(k)
+                elif not active:
+                    st.session_state.sel_insts.append(k)
+                st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Main search input
+    # Pre-fill from example click
+    if "example_title" not in st.session_state:
+        st.session_state.example_title = ""
+        st.session_state.example_dept  = ""
+        st.session_state.example_num   = ""
+
+    vccs_title = st.text_input(
+        "Course Title",
+        value=st.session_state.example_title,
+        placeholder="What course are you looking up?  e.g. Calculus I",
+        key="title_input",
+    )
+
+    # Advanced toggle
+    show_adv = st.toggle("Advanced — department code & number", value=False)
+    if show_adv:
+        ac, nc = st.columns(2)
+        with ac:
             vccs_dept = st.text_input("Department Code",
-                placeholder="ACC, CSC, MTH… (optional)")
+                value=st.session_state.example_dept,
+                placeholder="ACC, MTH, CSC…")
         with nc:
             vccs_number = st.text_input("Course Number",
-                placeholder="101, 211… (optional)")
+                value=st.session_state.example_num,
+                placeholder="101, 211, 263…")
+        vccs_desc = st.text_area("Description (optional)",
+            placeholder="Paste catalog description for higher accuracy",
+            height=72)
+    else:
+        vccs_dept = st.session_state.example_dept
+        vccs_number = st.session_state.example_num
+        vccs_desc = ""
 
-    with settings_col:
-        st.markdown('<div class="tzai-section-label">Target institutions</div>', unsafe_allow_html=True)
-        selected = st.multiselect(
-            "Institutions",
-            options=list(loaded_institutions.keys()),
-            default=list(loaded_institutions.keys()),
-            format_func=lambda k: loaded_institutions[k],
-            label_visibility="collapsed",
-        )
-        top_k = st.slider("Results per institution", min_value=1, max_value=10, value=5)
-        st.markdown("<br>", unsafe_allow_html=True)
-        search_clicked = st.button(
-            "Find Transfer Matches", type="primary", key="single", use_container_width=True
-        )
+    top_k = st.select_slider("Results per institution",
+        options=[3, 5, 7, 10], value=5)
+
+    search_clicked = st.button("Find Matches →", type="primary", key="search")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
     if search_clicked:
         if not vccs_title.strip():
-            st.warning("Course title is required.")
-        elif not selected:
-            st.warning("Select at least one institution.")
+            st.warning("Enter a course title to search.")
         else:
-            with st.spinner("Searching…"):
+            with st.spinner(""):
+                # Show skeleton while loading
+                skeletons = st.empty()
+                skeletons.markdown(
+                    ''.join(['<div class="tzai-skeleton"></div>',
+                             '<div class="tzai-skeleton tzai-skeleton-sm"></div>'] * 2),
+                    unsafe_allow_html=True)
                 results = predict_transfer(
                     vccs_dept, vccs_number, vccs_title, vccs_desc,
-                    institutions=selected, top_k=top_k,
+                    institutions=st.session_state.sel_insts, top_k=top_k,
                 )
-            n_inst = len(selected)
-            cols = st.columns(n_inst) if n_inst <= 3 else [st] * n_inst
-            use_cols = n_inst <= 3
-
-            for i, inst_key in enumerate(selected):
-                inst_name    = loaded_institutions.get(inst_key, inst_key)
-                inst_results = results.get(inst_key, [])
-                container    = cols[i] if use_cols else st
-                with container:
-                    st.markdown(f'<div class="tzai-inst-head">{inst_name}</div>',
-                                unsafe_allow_html=True)
-                    if not inst_results:
-                        st.caption("No matches found.")
-                    else:
-                        for j, r in enumerate(inst_results):
-                            render_result(r, j)
+                skeletons.empty()
+            render_results(results, st.session_state.sel_insts)
     else:
         st.markdown("""
         <div class="tzai-empty">
-          <div class="ico">🔍</div>
-          <p>Enter a course and click <strong>Find Transfer Matches</strong></p>
+          <div class="tzai-empty-ico">⟳</div>
+          <div class="tzai-empty-title">Enter a course title above</div>
+          <div class="tzai-empty-sub">or try one of these examples</div>
         </div>""", unsafe_allow_html=True)
 
+        # Clickable example chips — use columns as buttons
+        st.markdown('<div class="tzai-label" style="text-align:center;">Examples</div>',
+                    unsafe_allow_html=True)
+        ex_cols = st.columns(len(EXAMPLES))
+        for i, (title, dept, num) in enumerate(EXAMPLES):
+            with ex_cols[i]:
+                if st.button(title, key=f"ex_{i}", use_container_width=True):
+                    st.session_state.example_title = title
+                    st.session_state.example_dept  = dept
+                    st.session_state.example_num   = num
+                    st.rerun()
+
 
 # ════════════════════════════════════════════════════════════════════════
-# TAB 2 — Transcript Evaluator
+# TAB 2 — Transcript
 # ════════════════════════════════════════════════════════════════════════
 with tab2:
-    cfg_col, _ = st.columns([5, 2])
-    with cfg_col:
-        rc, cc = st.columns([3, 1])
-        with rc:
-            selected_t2 = st.multiselect(
-                "Target institutions",
-                options=list(loaded_institutions.keys()),
-                default=list(loaded_institutions.keys()),
-                format_func=lambda k: loaded_institutions[k],
-                key="t2_inst",
-            )
-        with cc:
-            min_credits = st.number_input(
-                "Min credits", value=MIN_CREDITS_REQUIRED, min_value=1, max_value=120,
-            )
+    rc, cc = st.columns([4, 1])
+    with rc:
+        sel_t2 = st.multiselect("Target institutions",
+            options=list(INSTS.keys()),
+            default=list(INSTS.keys()),
+            format_func=lambda k: INSTS[k],
+            key="t2_inst")
+    with cc:
+        min_credits = st.number_input("Min credits",
+            value=MIN_CREDITS_REQUIRED, min_value=1, max_value=120)
 
     st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown('<div class="tzai-section-label">Your courses</div>', unsafe_allow_html=True)
+    st.markdown('<div class="tzai-label">Your courses</div>', unsafe_allow_html=True)
 
-    default_courses = [
+    DEFAULT_COURSES = [
         ("ACC", "211", "PRINCIPLES OF ACCOUNTING I"),
         ("ENG", "111", "COLLEGE COMPOSITION I"),
         ("MTH", "263", "CALCULUS I"),
         ("BIO", "101", "GENERAL BIOLOGY I"),
         ("CSC", "221", "INTRODUCTION TO PROBLEM SOLVING AND PROGRAMMING"),
     ]
-    num_courses = st.number_input("Number of courses", 1, 30, len(default_courses), key="n_courses")
+    n = st.number_input("Number of courses", 1, 30, len(DEFAULT_COURSES), key="n_courses")
 
-    # Column headers
     hc = st.columns([1, 1, 3, 3, 1])
-    for col, lbl in zip(hc, ["Dept", "Number", "Title", "Description", "Cr"]):
-        col.markdown(f'<div class="tzai-col-header">{lbl}</div>', unsafe_allow_html=True)
+    for col, lbl in zip(hc, ["Dept", "No.", "Title", "Description", "Cr"]):
+        col.markdown(f'<div class="tzai-col-hdr">{lbl}</div>', unsafe_allow_html=True)
 
     course_inputs = []
-    for i in range(int(num_courses)):
-        defs = default_courses[i] if i < len(default_courses) else ("", "", "")
+    for i in range(int(n)):
+        defs = DEFAULT_COURSES[i] if i < len(DEFAULT_COURSES) else ("", "", "")
         row  = st.columns([1, 1, 3, 3, 1])
         dept  = row[0].text_input("d", value=defs[0],  key=f"d_{i}", label_visibility="collapsed")
         num   = row[1].text_input("n", value=defs[1],  key=f"n_{i}", label_visibility="collapsed")
@@ -553,62 +735,58 @@ with tab2:
             course_inputs.append({"dept": dept, "number": num, "title": title,
                                    "description": desc, "credits": creds})
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    eval_clicked = st.button("Evaluate Transcript", type="primary", key="transcript")
+    eval_clicked = st.button("Evaluate Transcript →", type="primary", key="eval")
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
     if eval_clicked:
         if not course_inputs:
             st.warning("Enter at least one course title.")
-        elif not selected_t2:
+        elif not sel_t2:
             st.warning("Select at least one institution.")
         else:
             with st.spinner(f"Evaluating {len(course_inputs)} courses…"):
-                results = evaluate_transcript(
-                    course_inputs, institutions=selected_t2,
-                    min_credits_required=min_credits,
-                )
-
-            for inst_key in selected_t2:
+                results = evaluate_transcript(course_inputs, institutions=sel_t2,
+                                              min_credits_required=min_credits)
+            for inst_key in sel_t2:
                 r = results.get(inst_key)
                 if not r: continue
-
                 status = "eligible" if r["eligible"] else ("borderline" if r["borderline"] else "ineligible")
+                icon   = "✓" if r["eligible"] else ("~" if r["borderline"] else "✕")
                 st.markdown(
                     f'<div class="tzai-banner {status}">'
-                    f'<p class="tzai-banner-text">{r["institution_name"]} — {r["summary"]}</p>'
+                    f'<span>{icon}</span>'
+                    f'<span>{r["institution_name"]} — {r["summary"]}</span>'
                     f'</div>', unsafe_allow_html=True)
 
-                sc1, sc2, sc3, sc4 = st.columns(4)
-                sc1.metric("Courses",              r["total_courses"])
-                sc2.metric("Total Credits",        r["total_credits"])
-                sc3.metric("Confirmed Credits",    r["transferable_credits_confident"])
-                sc4.metric("Possible Credits",     r["transferable_credits_possible"])
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Courses",           r["total_courses"])
+                m2.metric("Total Credits",     r["total_credits"])
+                m3.metric("Confirmed",         r["transferable_credits_confident"])
+                m4.metric("Possible",          r["transferable_credits_possible"])
 
-                st.markdown('<div class="tzai-section-label" style="margin-top:1rem;">Per-course results</div>',
+                st.markdown('<div class="tzai-label" style="margin-top:1rem;">Per-course</div>',
                             unsafe_allow_html=True)
-
                 rows_html = ""
                 for cr in r["course_results"]:
                     conf = cr["confidence"]
-                    cls  = _conf_cls(conf)
-                    label = " ".join(filter(None, [cr["dept"], cr["number"], cr["title"]])).strip()
-                    match = cr["best_match"] or "—"
-                    rows_html += f"""
-                    <div class="tzai-tr-row">
-                      <span class="tzai-tr-label">{label}</span>
+                    cls  = _cls(conf)
+                    src  = " ".join(filter(None, [cr["dept"], cr["number"], cr["title"]])).strip()
+                    tgt  = cr["best_match"] or "—"
+                    rows_html += f"""<div class="tzai-tr">
+                      <span class="tzai-tr-source">{src}</span>
                       <span class="tzai-tr-arrow">→</span>
-                      <span class="tzai-tr-match">{match}</span>
-                      <span class="tzai-tr-conf {cls}">{conf:.0%}</span>
+                      <span class="tzai-tr-target">{tgt}</span>
+                      <span class="tzai-tr-pct {cls}">{conf:.0%}</span>
                     </div>"""
                 st.markdown(rows_html, unsafe_allow_html=True)
                 st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown("""
         <div class="tzai-empty">
-          <div class="ico">📋</div>
-          <p>Fill in your courses above and click <strong>Evaluate Transcript</strong></p>
+          <div class="tzai-empty-ico">📋</div>
+          <div class="tzai-empty-title">Fill in your courses</div>
+          <div class="tzai-empty-sub">then click Evaluate Transcript</div>
         </div>""", unsafe_allow_html=True)
 
 
@@ -616,112 +794,111 @@ with tab2:
 # TAB 3 — Model Card
 # ════════════════════════════════════════════════════════════════════════
 with tab3:
+    st.markdown('<span class="tzai-mc-pill">v3 · BGE + XGBoost</span>', unsafe_allow_html=True)
+
     left, right = st.columns([3, 2], gap="large")
 
     with left:
-        st.markdown('<div class="tzai-mc-title">Architecture</div>', unsafe_allow_html=True)
+        st.markdown('<div class="tzai-mc-h">Architecture</div>', unsafe_allow_html=True)
         st.markdown("""
 **Two-stage retrieve-then-rank pipeline, run per institution.**
 
-**Stage 1 — 3-signal RRF Retrieval** returns top-50 candidates:
+**Stage 1 — 3-signal RRF** retrieves top-50 candidates:
 
 | Signal | What it captures |
 |:---|:---|
-| Fine-tuned BGE bi-encoder | Semantic similarity via TripletLoss fine-tuning |
-| TF-IDF (1-2 gram, 15k features) | Lexical keyword overlap |
+| Fine-tuned BGE bi-encoder | Semantic similarity (TripletLoss) |
+| TF-IDF 1–2 gram, 15k features | Lexical keyword overlap |
 | Department prior | P(target dept given source dept) |
 
-**Stage 2 — XGBoost Reranker** scores each candidate on 13 features:
+**Stage 2 — XGBoost Reranker** scores candidates on 13 features:
 
 | Group | Features |
 |:---|:---|
 | Semantic | BGE cosine sim |
-| Lexical | TF-IDF (full), TF-IDF (title only), SequenceMatcher ratio |
+| Lexical | TF-IDF (full), TF-IDF (title), SequenceMatcher |
 | Structural | Level ratio, same-level flag, dept prior, RRF score |
 | Interactions | BGE×dept, BGE×title, BGE×TF-IDF, dept×title, dept×level |
 
-Per-query softmax over XGBoost margins produces calibrated confidence scores.
-Isotonic regression calibrates displayed probabilities.
+Per-query softmax over XGBoost margins for calibrated confidence.
         """)
 
-        st.markdown('<div class="tzai-mc-title" style="margin-top:1.5rem;">Confidence thresholds</div>',
+        st.markdown('<div class="tzai-mc-h" style="margin-top:1.5rem;">Thresholds</div>',
                     unsafe_allow_html=True)
         st.markdown(f"""
-| Confidence | Threshold | Action |
+| | Threshold | Action |
 |:---|:---|:---|
-| 🟢 High | ≥ {HIGH_CONFIDENCE_THRESHOLD:.0%} | Show "Transfers as X" — ≥ 90% precision |
-| 🟡 Possible | ≥ {TRANSFER_THRESHOLD:.0%} | Advisor review recommended |
-| 🔴 Low | < {TRANSFER_THRESHOLD:.0%} | Show top-3 only, refer to registrar |
+| 🟢 High Confidence | ≥ {HIGH_CONFIDENCE_THRESHOLD:.0%} | Transfers as X — ≥ 90% precision |
+| 🟡 Possible Match  | ≥ {TRANSFER_THRESHOLD:.0%} | Advisor review recommended |
+| 🔴 Low Confidence  | < {TRANSFER_THRESHOLD:.0%} | Refer to registrar |
         """)
 
-        st.markdown('<div class="tzai-mc-title" style="margin-top:1.5rem;">Training data</div>',
+        st.markdown('<div class="tzai-mc-h" style="margin-top:1.5rem;">Training data</div>',
                     unsafe_allow_html=True)
         st.markdown("""
-| Institution pair | Train pairs | Test pairs |
+| Pair | Train | Test |
 |:---|:---:|:---:|
 | VCCS → W&M | ~267 | 67 |
 | VCCS → VT | ~242 | 60 |
 | CCC → UCSC | ~723 | 181 |
 
-Sources: VCCS→W&M and VCCS→VT articulation agreements; CCC→UCSC articulation data.
 FERPA compliant — no student PII.
         """)
-        catalog_lines = "  \n".join(
+        catalog_md = "  \n".join(
             f"**{v}** — {len(artifacts['institutions'][k]['codes']):,} courses"
-            for k, v in loaded_institutions.items()
+            for k, v in INSTS.items()
         )
-        st.markdown(f"\n{catalog_lines}")
+        st.markdown(catalog_md)
 
     with right:
-        st.markdown('<div class="tzai-mc-title">Performance</div>', unsafe_allow_html=True)
-        scorecard = artifacts.get("scorecard", {})
+        st.markdown('<div class="tzai-mc-h">Performance</div>', unsafe_allow_html=True)
+        sc = artifacts.get("scorecard", {})
 
-        if scorecard and any(k in scorecard for k in ("wm", "vt", "ucsc")):
-            for inst_key, inst_label in [("wm", "William & Mary"), ("vt", "Virginia Tech"),
-                                          ("ucsc", "CCC → UCSC")]:
-                sc = scorecard.get(inst_key, {})
-                if not sc: continue
+        if sc and any(k in sc for k in ("wm", "vt", "ucsc")):
+            for inst_key, label in [("wm", "William & Mary"),
+                                     ("vt", "Virginia Tech"),
+                                     ("ucsc", "CCC → UCSC")]:
+                s = sc.get(inst_key, {})
+                if not s: continue
+                t1 = s.get("top1_lr", 0); t3 = s.get("top3_lr", 0)
+                pr = s.get("precision_tau", 0); cov = s.get("coverage_tau", 0)
 
-                t1   = sc.get("top1_lr", 0)
-                t3   = sc.get("top3_lr", 0)
-                prec = sc.get("precision_tau", 0)
-                cov  = sc.get("coverage_tau", 0)
+                def bar(v, good, warn=0.5):
+                    col = "#3fb950" if v >= good else ("#d29922" if v >= warn else "#f85149")
+                    return (f'<div class="tzai-perf-row">'
+                            f'<div class="tzai-perf-top">'
+                            f'<span>{label_}</span>'
+                            f'<b style="color:{col}">{v:.1%}</b></div>'
+                            f'<div class="tzai-perf-track">'
+                            f'<div class="tzai-perf-fill" style="width:{v*100:.1f}%;background:{col}"></div>'
+                            f'</div></div>')
 
-                st.markdown(f"**{inst_label}**")
-                metrics = [
-                    ("Top-1 Recall",  t1,   0.55, 0.45),
-                    ("Top-3 Recall",  t3,   0.75, 0.60),
-                    ("Precision @ τ", prec, 0.90, 0.75),
-                    ("Coverage @ τ",  cov,  0.20, 0.10),
-                ]
-                bars = ""
-                for label, v, good, warn in metrics:
-                    color = "#3fb950" if v >= good else ("#d29922" if v >= warn else "#f85149")
-                    bars += f"""
-                    <div class="tzai-perf-row">
-                      <div class="tzai-perf-label">
-                        <span>{label}</span>
-                        <b style="color:{color}">{v:.1%}</b>
-                      </div>
-                      <div class="tzai-perf-track">
-                        <div class="tzai-perf-fill" style="width:{v*100:.1f}%;background:{color};"></div>
-                      </div>
-                    </div>"""
-                st.markdown(bars, unsafe_allow_html=True)
-                st.caption(
-                    f"Brier: {sc.get('brier',0):.4f}  ·  "
-                    f"ECE: {sc.get('ece',0):.4f}  ·  "
-                    f"τ = {sc.get('op_tau',0):.2f}"
-                )
-                st.markdown("<br>", unsafe_allow_html=True)
+                html = f'<div class="tzai-perf-inst"><div class="tzai-perf-inst-name">{label}</div>'
+                for label_, v_, good_, warn_ in [
+                    ("Top-1 Recall", t1, 0.55, 0.45),
+                    ("Top-3 Recall", t3, 0.75, 0.60),
+                    ("Precision @ τ", pr, 0.90, 0.75),
+                    ("Coverage @ τ", cov, 0.20, 0.10),
+                ]:
+                    col_ = "#3fb950" if v_ >= good_ else ("#d29922" if v_ >= warn_ else "#f85149")
+                    html += (f'<div class="tzai-perf-row">'
+                             f'<div class="tzai-perf-top">'
+                             f'<span>{label_}</span>'
+                             f'<b style="color:{col_}">{v_:.1%}</b></div>'
+                             f'<div class="tzai-perf-track">'
+                             f'<div class="tzai-perf-fill" style="width:{v_*100:.1f}%;background:{col_}"></div>'
+                             f'</div></div>')
+                html += f'</div>'
+                st.markdown(html, unsafe_allow_html=True)
+                st.caption(f"Brier {s.get('brier',0):.4f} · ECE {s.get('ece',0):.4f} · τ={s.get('op_tau',0):.2f}")
         else:
             st.info("Run `python scripts/build_artifacts.py` to populate metrics.")
 
-        st.markdown('<div class="tzai-mc-title" style="margin-top:0.5rem;">Limitations</div>',
+        st.markdown('<div class="tzai-mc-h" style="margin-top:1rem;">Limitations</div>',
                     unsafe_allow_html=True)
         st.markdown("""
-- **Coverage at high precision is ~15–25%.** The system says "low confidence" rather than guessing wrong.
-- **CCC→UCSC** top-3 ~68% — smaller training set and 115+ colleges with varying formats.
-- **Dept/number are soft signals.** Missing or non-standard codes reduce confidence slightly.
-- **Not a registrar decision.** Always confirm with the registrar before acting on results.
+- Coverage at high precision ~15–25% — the system says "low confidence" rather than guessing wrong
+- CCC→UCSC top-3 ~68% — smaller training set, 115+ colleges
+- Dept/number optional — missing codes reduce confidence slightly
+- Not a registrar decision — always confirm before acting
         """)
