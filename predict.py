@@ -207,6 +207,15 @@ def load_artifacts():
     else:
         a["scorecard"] = {}
 
+    # Per-institution high-confidence thresholds from scorecard op_tau.
+    # op_tau is the lowest τ where precision ≥ 90% on the held-out test set.
+    # Falls back to the global constant if scorecard is missing or op_tau is 0.
+    a["high_conf_thresholds"] = {
+        k: (a["scorecard"].get(k, {}).get("op_tau") or HIGH_CONFIDENCE_THRESHOLD)
+        for k in INSTITUTION_REGISTRY
+    }
+    print(f"[DIAG] high_conf_thresholds: {a['high_conf_thresholds']}")
+
     print("Loading fine-tuned BGE model...")
     a["bge_model"] = SentenceTransformer(
         _resolve_bge_model(), device="cpu", token=os.environ.get("HF_TOKEN")
@@ -409,11 +418,13 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
         else:
             calib_probs = raw_probs
 
+        high_tau = a["high_conf_thresholds"].get(inst_key, HIGH_CONFIDENCE_THRESHOLD)
+
         inst_results = []
         for i, (cand_code, rrf_score, sigs) in enumerate(cand_info_list):
             c     = float(conf[i])
             info  = inst["lookup"].get(cand_code, {})
-            if c >= HIGH_CONFIDENCE_THRESHOLD:
+            if c >= high_tau:
                 conf_label = "High Confidence"
             elif c >= TRANSFER_THRESHOLD:
                 conf_label = "Possible Match"
@@ -457,21 +468,23 @@ def evaluate_transcript(courses, institutions=None,
 
         for inst_key in institutions:
             best = (preds.get(inst_key) or [{}])[0]
-            conf = best.get("confidence", 0.0)
+            conf  = best.get("confidence", 0.0)
+            label = best.get("confidence_label", "Low Confidence")
             inst_totals[inst_key]["total_credits"] += cr
             if conf >= TRANSFER_THRESHOLD:
                 inst_totals[inst_key]["transferable"] += cr
-            if conf >= HIGH_CONFIDENCE_THRESHOLD:
+            if label == "High Confidence":
                 inst_totals[inst_key]["high_conf"] += cr
             inst_totals[inst_key]["results"].append({
-                "dept":        c["dept"],
-                "number":      c["number"],
-                "title":       c["title"],
-                "credits":     cr,
-                "best_match":  best.get("code"),
-                "best_title":  best.get("title"),
-                "confidence":  conf,
-                "probability": conf,
+                "dept":             c["dept"],
+                "number":           c["number"],
+                "title":            c["title"],
+                "credits":          cr,
+                "best_match":       best.get("code"),
+                "best_title":       best.get("title"),
+                "confidence":       conf,
+                "confidence_label": label,
+                "probability":      conf,
             })
 
     output = {}

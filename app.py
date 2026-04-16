@@ -3,7 +3,6 @@
 import streamlit as st
 from predict import predict_transfer, evaluate_transcript, load_artifacts
 from config import (
-    HIGH_CONFIDENCE_THRESHOLD, TRANSFER_THRESHOLD,
     MIN_CREDITS_REQUIRED, DEFAULT_CREDITS_PER_COURSE,
 )
 
@@ -410,15 +409,15 @@ INST_LOGOS = {
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-def _cls(conf):
-    if conf >= HIGH_CONFIDENCE_THRESHOLD: return "high"
-    if conf >= TRANSFER_THRESHOLD:        return "mid"
-    return "low"
+_LABEL_CLS = {"High Confidence": "high", "Possible Match": "mid", "Low Confidence": "low"}
 
-def _verdict(conf, code):
-    if conf >= HIGH_CONFIDENCE_THRESHOLD:
+def _cls(r):
+    return _LABEL_CLS.get(r.get("confidence_label", ""), "low")
+
+def _verdict(label, code):
+    if label == "High Confidence":
         return f'<span class="tzai-card-verdict high">✓ Transfers as {code}</span>'
-    if conf >= TRANSFER_THRESHOLD:
+    if label == "Possible Match":
         return '<span class="tzai-card-verdict mid">~ Advisor review recommended</span>'
     return '<span class="tzai-card-verdict low">– Low confidence</span>'
 
@@ -431,7 +430,7 @@ def render_results(results, selected):
         if not rows:
             st.markdown('<p style="color:var(--text-4);font-size:0.82rem;">No matches found.</p>', unsafe_allow_html=True)
             continue
-        r0  = rows[0]; c0 = r0["confidence"]; cls = _cls(c0)
+        r0  = rows[0]; c0 = r0["confidence"]; cls = _cls(r0)
         st.markdown(f"""
         <div class="tzai-card-feat {cls}">
           <div class="tzai-card-top">
@@ -439,7 +438,7 @@ def render_results(results, selected):
             <span class="tzai-card-pct {cls}">{c0:.0%}</span>
           </div>
           <div class="tzai-card-title">{r0['title']}</div>
-          {_verdict(c0, r0['code'])}
+          {_verdict(r0['confidence_label'], r0['code'])}
         </div>""", unsafe_allow_html=True)
         with st.expander("Signal breakdown", expanded=False):
             sigs = r0["signals"]
@@ -453,7 +452,7 @@ def render_results(results, selected):
             <div class="tzai-card-sub">
               <span class="tzai-sub-code">{r['code']}</span>
               <span class="tzai-sub-title">{r['title']}</span>
-              <span class="tzai-sub-pct {_cls(r['confidence'])}">{r['confidence']:.0%}</span>
+              <span class="tzai-sub-pct {_cls(r)}">{r['confidence']:.0%}</span>
             </div>""" for r in rows[1:])
             st.markdown(sub, unsafe_allow_html=True)
 
@@ -688,7 +687,7 @@ with tab2:
                             unsafe_allow_html=True)
                 rows_html = ""
                 for cr in r["course_results"]:
-                    conf = cr["confidence"]; cls = _cls(conf)
+                    conf = cr["confidence"]; cls = _LABEL_CLS.get(cr.get("confidence_label", ""), "low")
                     src  = " ".join(filter(None,[cr["dept"],cr["number"],cr["title"]])).strip()
                     tgt  = cr["best_match"] or "—"
                     rows_html += f"""<div class="tzai-tr">
