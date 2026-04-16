@@ -528,6 +528,7 @@ def quick_eval(test_df, get_query, get_target, get_dept_num, query_inst, cat, la
     for tau, prec, recall, coverage in sweep:
         if prec >= 0.90 and coverage > 0:
             op_tau = tau; op_prec = prec; op_rec = recall; op_cov = coverage
+            break  # take the LOWEST tau that achieves >= 90% precision
 
     print(f"\n  {label}  (n={n})")
     print(f"    Top-1 RRF={top1_rrf_r:.3f}  Top-1 XGB={top1_lr_r:.3f}  Top-3={top3_lr_r:.3f}")

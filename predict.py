@@ -67,7 +67,7 @@ def academic_level(num, inst_key):
     if num <= 0: return 0
     if inst_key in ("vccs", "wm"):
         return max(1, min(4, num // 100))
-    if inst_key in ("vt", "northeastern"):
+    if inst_key == "vt":
         return max(1, min(4, num // 1000))
     if inst_key == "ucsc":
         if num < 50:  return 1
