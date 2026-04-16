@@ -27,14 +27,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 
 from config import (
-    BGE_MODEL_PATH, QUERY_PREFIX, RETRIEVAL_K, RRF_K, DEPT_WEIGHT,
+    BGE_MODEL_PATH, BGE_HF_REPO, ARTIFACTS_HF_REPO,
+    QUERY_PREFIX, RETRIEVAL_K, RRF_K, DEPT_WEIGHT,
     TOP_K_DISPLAY, HIGH_CONFIDENCE_THRESHOLD, TRANSFER_THRESHOLD,
     DEFAULT_CREDITS_PER_COURSE, MIN_CREDITS_REQUIRED, ARTIFACTS_DIR,
 )
-
-if not Path(ARTIFACTS_DIR).exists():
-    from download_artifacts import download_artifacts
-    download_artifacts()
 
 
 INSTITUTION_REGISTRY = {
@@ -86,14 +83,14 @@ def academic_level(num, inst_key):
 _artifacts = None
 
 
-def _load_institution(key, a):
-    prefix = f"{ARTIFACTS_DIR}/{key}"
-    lookup_path = f"{prefix}_lookup.pkl"
-    codes_path  = f"{prefix}_codes.pkl"
-    emb_path    = f"{prefix}_embeddings.npy"
-    missing = [p for p in [lookup_path, codes_path, emb_path] if not Path(p).exists()]
+def _load_institution(key, a, adir):
+    prefix = adir / key
+    lookup_path = Path(f"{prefix}_lookup.pkl")
+    codes_path  = Path(f"{prefix}_codes.pkl")
+    emb_path    = Path(f"{prefix}_embeddings.npy")
+    missing = [p for p in [lookup_path, codes_path, emb_path] if not p.exists()]
     if missing:
-        print(f"  Skipping '{key}': missing {[Path(p).name for p in missing]}")
+        print(f"  Skipping '{key}': missing {[p.name for p in missing]}")
         return False
 
     with open(lookup_path, "rb") as f: lookup = pickle.load(f)
@@ -123,60 +120,80 @@ def _load_institution(key, a):
     return True
 
 
+def _resolve_artifacts_dir():
+    """Return a Path to the artifacts directory, downloading from HF Hub if needed."""
+    local = Path(ARTIFACTS_DIR)
+    if local.exists():
+        return local
+    from huggingface_hub import snapshot_download
+    print(f"Artifacts not found locally — downloading from {ARTIFACTS_HF_REPO} ...")
+    cached = snapshot_download(
+        repo_id=ARTIFACTS_HF_REPO,
+        repo_type="dataset",
+        token=os.environ.get("HF_TOKEN"),
+        ignore_patterns=["*.git*", ".gitattributes", "README.md"],
+    )
+    return Path(cached)
+
+
+def _resolve_bge_model():
+    """Return a model path/ID for SentenceTransformer, falling back to HF Hub."""
+    local = Path(BGE_MODEL_PATH)
+    if local.exists():
+        return str(local.resolve())
+    print(f"BGE model not found locally — loading from {BGE_HF_REPO} ...")
+    return BGE_HF_REPO
+
+
 def load_artifacts():
     global _artifacts
     if _artifacts is not None:
         return _artifacts
 
+    adir = _resolve_artifacts_dir()
     a = {}
 
-    with open(f"{ARTIFACTS_DIR}/classifier.pkl", "rb") as f:
+    with open(adir / "classifier.pkl", "rb") as f:
         a["classifier"] = pickle.load(f)
 
-    iso_path = f"{ARTIFACTS_DIR}/iso_cal.pkl"
-    if Path(iso_path).exists():
-        with open(iso_path, "rb") as f:
+    if (adir / "iso_cal.pkl").exists():
+        with open(adir / "iso_cal.pkl", "rb") as f:
             a["iso_cal"] = pickle.load(f)
     else:
         a["iso_cal"] = None
 
-    with open(f"{ARTIFACTS_DIR}/tfidf.pkl", "rb") as f:
+    with open(adir / "tfidf.pkl", "rb") as f:
         a["tfidf"] = pickle.load(f)
 
     # Per-institution dept priors (new format) — fall back to legacy single prior
-    dpm_path = f"{ARTIFACTS_DIR}/dept_prior_map.pkl"
-    if Path(dpm_path).exists():
-        with open(dpm_path, "rb") as f:
+    if (adir / "dept_prior_map.pkl").exists():
+        with open(adir / "dept_prior_map.pkl", "rb") as f:
             a["dept_prior_map"] = pickle.load(f)
+    elif (adir / "dept_prior.pkl").exists():
+        with open(adir / "dept_prior.pkl", "rb") as f:
+            prior = pickle.load(f)
+        a["dept_prior_map"] = {"wm": prior, "vt": prior}
     else:
-        dp_path = f"{ARTIFACTS_DIR}/dept_prior.pkl"
-        if Path(dp_path).exists():
-            with open(dp_path, "rb") as f:
-                prior = pickle.load(f)
-            a["dept_prior_map"] = {"wm": prior, "vt": prior}
-        else:
-            a["dept_prior_map"] = {}
+        a["dept_prior_map"] = {}
 
-    with open(f"{ARTIFACTS_DIR}/feature_names.pkl", "rb") as f:
+    with open(adir / "feature_names.pkl", "rb") as f:
         a["feature_names"] = pickle.load(f)
 
-    sc_path = f"{ARTIFACTS_DIR}/scorecard.pkl"
-    if Path(sc_path).exists():
-        with open(sc_path, "rb") as f:
+    if (adir / "scorecard.pkl").exists():
+        with open(adir / "scorecard.pkl", "rb") as f:
             a["scorecard"] = pickle.load(f)
     else:
         a["scorecard"] = {}
 
     print("Loading fine-tuned BGE model...")
-    bge_path = str(Path(BGE_MODEL_PATH).resolve())
     a["bge_model"] = SentenceTransformer(
-        bge_path, device="cpu", token=os.environ.get("HF_TOKEN")
+        _resolve_bge_model(), device="cpu", token=os.environ.get("HF_TOKEN")
     )
     print("BGE model loaded.")
 
     a["institutions"] = {}
     for key in INSTITUTION_REGISTRY:
-        _load_institution(key, a)
+        _load_institution(key, a, adir)
 
     print(f"Loaded institutions: {list(a['institutions'].keys())}")
     _artifacts = a
