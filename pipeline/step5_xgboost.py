@@ -4,6 +4,11 @@ Keep full feature set from v2, remove cross_encoder_score, add rrf_score and bge
 Train XGBoost with same hyperparams. Calibrate isotonic cv=5. 5-fold CV on training data only.
 """
 
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+from paths import WM_MERGED, WM_CATALOG, TRAIN_PAIRS
+
 import re, pickle
 import numpy as np
 import pandas as pd
@@ -24,8 +29,8 @@ np.random.seed(42)
 # ══════════════════════════════════════════════════════════════
 # DATA LOADING (identical to prior steps)
 # ══════════════════════════════════════════════════════════════
-df = pd.read_csv("vccs_wm_merged.csv")
-wm_catalog = pd.read_csv("wm_courses_2025.csv", encoding="latin-1")
+df = pd.read_csv(WM_MERGED)
+wm_catalog = pd.read_csv(WM_CATALOG, encoding="latin-1")
 df.columns = df.columns.str.strip()
 df = df.rename(columns={"Unnamed: 0": "idx"})
 
@@ -335,7 +340,7 @@ def extract_features_v3(row, vccs_emb=None, wm_emb=None, rrf_score=0.0, bge_fine
 # BUILD TRAINING PAIRS WITH RETRIEVAL SCORES
 # ══════════════════════════════════════════════════════════════
 print("\nLoading training pairs from Step 2...")
-train_pairs_df = pd.read_csv("_train_pairs.csv")
+train_pairs_df = pd.read_csv(TRAIN_PAIRS)
 print(f"Training pairs: {len(train_pairs_df)}")
 print(f"Class balance: {train_pairs_df['label'].value_counts().to_dict()}")
 

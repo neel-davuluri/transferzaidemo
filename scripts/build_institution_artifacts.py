@@ -21,12 +21,24 @@ import pandas as pd
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
 from config import BGE_MODEL_PATH, QUERY_PREFIX, ARTIFACTS_DIR
+from paths import NEU_CATALOG, VT_CATALOG, UCSC_CATALOG
 
 INSTITUTIONS_TO_BUILD = {
     "northeastern": {
-        "csv": "northeastern_courses.csv",
+        "csv": str(NEU_CATALOG),
         "name": "Northeastern University",
+    },
+    "vt": {
+        "csv": str(VT_CATALOG),
+        "name": "Virginia Tech",
+    },
+    "ucsc": {
+        "csv": str(UCSC_CATALOG),
+        "name": "UC Santa Cruz",
     },
 }
 

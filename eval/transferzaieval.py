@@ -29,14 +29,17 @@ import xgboost as xgb
 warnings.filterwarnings('ignore')
 np.random.seed(42)
 
-DATA_DIR = Path("/content")  # Colab puts manual uploads here
+# Paths now resolved via paths.py
+import sys as _sys; _sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from paths import WM_MERGED as _WM_MERGED, WM_CATALOG as _WM_CATALOG
+DATA_DIR = None  # unused; paths below are absolute
 
 # ============================================================
 # CELL 2: LOAD DATA
 # ============================================================
 
-df = pd.read_csv(DATA_DIR / "vccs_wm_merged.csv")
-wm_catalog = pd.read_csv(DATA_DIR / "wm_courses_2025.csv", encoding="latin-1")
+df = pd.read_csv(_WM_MERGED)
+wm_catalog = pd.read_csv(_WM_CATALOG, encoding="latin-1")
 
 df.columns = df.columns.str.strip()
 df = df.rename(columns={"Unnamed: 0": "idx"})

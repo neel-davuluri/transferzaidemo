@@ -6,6 +6,11 @@ Signal 3: Department prior P(wm_dept | vccs_dept) from train_pos at 0.5x weight
 k=50 retrieval depth. Print retrieval ceiling.
 """
 
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+from paths import WM_MERGED, WM_CATALOG
+
 import re
 import numpy as np
 import pandas as pd
@@ -18,8 +23,8 @@ from sentence_transformers import SentenceTransformer
 np.random.seed(42)
 
 # ── Replicate data loading + split ──────────────────────────────────────
-df = pd.read_csv("vccs_wm_merged.csv")
-wm_catalog = pd.read_csv("wm_courses_2025.csv", encoding="latin-1")
+df = pd.read_csv(WM_MERGED)
+wm_catalog = pd.read_csv(WM_CATALOG, encoding="latin-1")
 df.columns = df.columns.str.strip()
 df = df.rename(columns={"Unnamed: 0": "idx"})
 

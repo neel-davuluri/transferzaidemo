@@ -4,6 +4,11 @@ For each positive pair in train_pos, generate 1 synthetic VCCS course descriptio
 that is in the same department, sounds similar, but should NOT transfer.
 """
 
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+from paths import WM_MERGED, WM_CATALOG, SYNTH_NEG_CACHE, TRAIN_PAIRS, TEST_POS
+
 import re, json, time
 import numpy as np
 import pandas as pd
@@ -15,8 +20,8 @@ import anthropic
 np.random.seed(42)
 
 # ── Replicate Step 1 split ──────────────────────────────────────────────
-df = pd.read_csv("vccs_wm_merged.csv")
-wm_catalog = pd.read_csv("wm_courses_2025.csv", encoding="latin-1")
+df = pd.read_csv(WM_MERGED)
+wm_catalog = pd.read_csv(WM_CATALOG, encoding="latin-1")
 df.columns = df.columns.str.strip()
 df = df.rename(columns={"Unnamed: 0": "idx"})
 
@@ -99,7 +104,7 @@ train_rows = list(train_pos.iterrows())
 batches = [train_rows[i:i + BATCH_SIZE] for i in range(0, len(train_rows), BATCH_SIZE)]
 
 synthetic_negatives = []
-cache_file = Path("_cache_synthetic_negatives.json")
+cache_file = SYNTH_NEG_CACHE
 
 # Resume from cache if partial run
 if cache_file.exists():
@@ -355,9 +360,9 @@ for i, syn in enumerate(synthetic_negatives[:3]):
     print(f"        Reason: {syn['reason_no_transfer'][:100]}")
 
 # Save training pairs for later steps
-train_pairs_df.to_csv("_train_pairs.csv", index=False)
+train_pairs_df.to_csv(TRAIN_PAIRS, index=False)
 print(f"\nSaved training pairs to _train_pairs.csv")
 
 # Also save test_pos indices for reproducibility
-test_pos.to_csv("_test_pos.csv", index=False)
+test_pos.to_csv(TEST_POS, index=False)
 print(f"Saved test_pos ({len(test_pos)} rows) to _test_pos.csv")

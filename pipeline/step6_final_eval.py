@@ -7,6 +7,11 @@ instead of Nelder-Mead on Platt scaling. Also add interaction features
 when department matches.
 """
 
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+from paths import WM_MERGED, WM_CATALOG
+
 import re, pickle, os
 import numpy as np
 import pandas as pd
@@ -26,8 +31,8 @@ np.random.seed(42)
 # ══════════════════════════════════════════════════════════════
 # DATA LOADING + SPLIT (identical boilerplate)
 # ══════════════════════════════════════════════════════════════
-df = pd.read_csv("vccs_wm_merged.csv")
-wm_catalog = pd.read_csv("wm_courses_2025.csv", encoding="latin-1")
+df = pd.read_csv(WM_MERGED)
+wm_catalog = pd.read_csv(WM_CATALOG, encoding="latin-1")
 df.columns = df.columns.str.strip()
 df = df.rename(columns={"Unnamed: 0": "idx"})
 
@@ -164,6 +169,24 @@ def retrieve_three_signal_rrf(vccs_text, vccs_course_str, vccs_embedding=None, k
 # ══════════════════════════════════════════════════════════════
 # FEATURE EXTRACTION: base signals + interactions
 # ══════════════════════════════════════════════════════════════
+def academic_level(num, inst_key):
+    """Map a raw course number to academic level 1–4 (freshman–senior)."""
+    if num <= 0:
+        return 0
+    if inst_key in ("vccs", "wm"):
+        return max(1, min(4, num // 100))
+    if inst_key in ("vt", "northeastern"):
+        return max(1, min(4, num // 1000))
+    if inst_key == "ucsc":
+        if num < 50:  return 1
+        if num < 100: return 2
+        if num < 150: return 3
+        return 4
+    if num >= 1000:
+        return max(1, min(4, num // 1000))
+    return max(1, min(4, num // 100))
+
+
 def extract_signals(vccs_emb, vccs_text, vccs_course_str, cand_code, rrf_score):
     cand_idx = wm_code_to_idx[cand_code]
     wm_emb = wm_embs_ft[cand_idx]
@@ -192,8 +215,11 @@ def extract_signals(vccs_emb, vccs_text, vccs_course_str, cand_code, rrf_score):
 
     wm_parsed = parse_wm_course(cand_code)
     if vccs_parsed and wm_parsed:
-        num_ratio = min(vccs_parsed[0]["number"], wm_parsed["number"]) / max(vccs_parsed[0]["number"], wm_parsed["number"])
-        same_level = int(vccs_parsed[0]["number"] // 100 == wm_parsed["number"] // 100)
+        vccs_lvl  = academic_level(vccs_parsed[0]["number"], "vccs")
+        tgt_lvl   = academic_level(wm_parsed["number"], "wm")
+        level_diff = abs(vccs_lvl - tgt_lvl)
+        num_ratio  = 1.0 - level_diff / 3.0
+        same_level = int(level_diff == 0)
     else:
         num_ratio = 0.0
         same_level = 0

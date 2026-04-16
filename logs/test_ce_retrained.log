@@ -1,0 +1,42 @@
+Device: mps
+Loading BGE model...
+Loading cross-encoder...
+TF-IDF vocab: 15000 terms
+
+CCC dept prior (top-5 by volume):
+  CHEM     (n=127) → CHEM=1.00
+  MATH     (n=105) → MATH=0.58 | AM=0.28 | CSE=0.06
+  PHYS     (n=80) → PHYS=1.00
+  DANC     (n=29) → THEA=1.00
+  ART      (n=29) → ART=1.00
+
+============================================================
+RESULTS — BGE+RRF vs BGE+RRF+CE (fine-tuned cross-encoder)
+============================================================
+
+  W&M (n=67), rerank top-10:
+                                    Top-1  Top-3
+    BGE+RRF only             0.418  0.642
+    + CE rerank (fine-tuned) 0.522  0.776
+    Delta                   +0.104 +0.134
+
+  VT (n=60), rerank top-10:
+                                    Top-1  Top-3
+    BGE+RRF only             0.417  0.667
+    + CE rerank (fine-tuned) 0.550  0.733
+    Delta                   +0.133 +0.067
+
+  CCC→UCSC (n=181), rerank top-10:
+                                    Top-1  Top-3
+    BGE+RRF only             0.309  0.541
+    + CE rerank (fine-tuned) 0.392  0.674
+    Delta                   +0.083 +0.133
+
+============================================================
+SUMMARY — Top-1 with CE reranking
+============================================================
+  W&M:       0.522  (was 0.418, +0.104)
+  VT:        0.550  (was 0.417, +0.133)
+  CCC→UCSC:  0.392  (was 0.309, +0.083)
+
+Device used: mps

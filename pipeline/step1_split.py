@@ -3,6 +3,11 @@ Step 1 — Leakage-free data split
 Stratified 80/20 on pos_df by W&M department. dept_map from train_pos only.
 """
 
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+from paths import WM_MERGED, WM_CATALOG
+
 import re
 import numpy as np
 import pandas as pd
@@ -12,8 +17,8 @@ from sklearn.model_selection import train_test_split
 np.random.seed(42)
 
 # ── Load data exactly as in transferzaieval.py ──────────────────────────
-df = pd.read_csv("vccs_wm_merged.csv")
-wm_catalog = pd.read_csv("wm_courses_2025.csv", encoding="latin-1")
+df = pd.read_csv(WM_MERGED)
+wm_catalog = pd.read_csv(WM_CATALOG, encoding="latin-1")
 
 df.columns = df.columns.str.strip()
 df = df.rename(columns={"Unnamed: 0": "idx"})
