@@ -172,12 +172,21 @@ def load_artifacts():
     elif (adir / "dept_prior.pkl").exists():
         with open(adir / "dept_prior.pkl", "rb") as f:
             prior = pickle.load(f)
-        a["dept_prior_map"] = {"wm": prior, "vt": prior}
+        # Apply legacy single prior to all known institutions
+        a["dept_prior_map"] = {k: prior for k in INSTITUTION_REGISTRY}
     else:
         a["dept_prior_map"] = {}
 
-    with open(adir / "feature_names.pkl", "rb") as f:
-        a["feature_names"] = pickle.load(f)
+    if (adir / "feature_names.pkl").exists():
+        with open(adir / "feature_names.pkl", "rb") as f:
+            a["feature_names"] = pickle.load(f)
+    else:
+        # Fallback: use all features produced by extract_signals
+        a["feature_names"] = [
+            "bge_sim", "tfidf_sim", "tfidf_title_sim", "dept_prob", "title_sim",
+            "level_ratio", "same_level", "rrf_score", "num_ratio",
+            "bge_x_dept", "bge_x_title", "bge_x_tfidf", "dept_x_title", "dept_x_level",
+        ]
 
     if (adir / "scorecard.pkl").exists():
         with open(adir / "scorecard.pkl", "rb") as f:
@@ -356,17 +365,39 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
             feat_vecs.append(feat_vec)
             cand_info_list.append((cand_code, rrf_score, sigs))
 
-        X       = np.array(feat_vecs, dtype=np.float64)
-        # Use booster directly — clf.predict_proba() segfaults after PyTorch is loaded
-        dmat    = xgb.DMatrix(X)
-        margins = clf.get_booster().predict(dmat, output_margin=True)
-        raw_probs = 1.0 / (1.0 + np.exp(-margins))   # sigmoid → same values as predict_proba
+        if not feat_vecs:
+            results[inst_key] = []
+            continue
 
-        # Per-query softmax over margins for confidence (fixes class imbalance / base rate issue)
+        X = np.array(feat_vecs, dtype=np.float64)
+
+        # Score with whatever classifier was pickled (XGBoost or sklearn)
+        if hasattr(clf, "get_booster"):
+            # XGBoost: use booster directly — predict_proba() segfaults after PyTorch loads
+            dmat    = xgb.DMatrix(X)
+            margins = clf.get_booster().predict(dmat, output_margin=True)
+        elif hasattr(clf, "decision_function"):
+            # LogisticRegression / SVM: decision_function gives log-odds margins
+            margins = clf.decision_function(X)
+        else:
+            # Generic sklearn: fall back to predict_proba, convert to log-odds
+            proba   = clf.predict_proba(X)[:, 1]
+            proba   = np.clip(proba, 1e-7, 1 - 1e-7)
+            margins = np.log(proba / (1 - proba))
+
+        raw_probs = 1.0 / (1.0 + np.exp(-margins))
+
+        # Per-query softmax over margins for confidence
         conf = scipy_softmax(margins)
 
         # Calibrated probabilities for display only
-        calib_probs = iso_cal.predict(raw_probs) if iso_cal is not None else raw_probs
+        if iso_cal is not None:
+            try:
+                calib_probs = iso_cal.predict(raw_probs.reshape(-1, 1)).flatten()
+            except Exception:
+                calib_probs = iso_cal.predict(raw_probs)
+        else:
+            calib_probs = raw_probs
 
         inst_results = []
         for i, (cand_code, rrf_score, sigs) in enumerate(cand_info_list):
