@@ -387,7 +387,8 @@ tr:hover td { background: var(--surface-2) !important; }
 """, unsafe_allow_html=True)
 
 # ── Load ──────────────────────────────────────────────────────────────────────
-_ARTIFACT_VERSION = "2026-04-16-v3"  # bump to force cache invalidation
+_ARTIFACT_VERSION = "2026-04-16-v4"  # bump to force cache invalidation
+st.cache_resource.clear()  # nuclear: wipe ALL cached resources on this deploy
 
 @st.cache_resource(show_spinner=False)
 def init(_version=_ARTIFACT_VERSION):
@@ -802,7 +803,7 @@ FERPA compliant — no student PII.
         diag = artifacts.get("_diag", {})
         if diag:
             st.code(
-                f"BUILD: 2026-04-16-v2\n"
+                f"BUILD: 2026-04-16-v4\n"
                 f"Python: {diag.get('python', '?')}\n"
                 f"XGBoost: {diag.get('xgboost', '?')}\n"
                 f"Classifier: {diag.get('classifier_type', '?')}\n"

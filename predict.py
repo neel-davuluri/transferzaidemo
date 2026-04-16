@@ -132,6 +132,7 @@ def _resolve_artifacts_dir():
         repo_type="dataset",
         token=os.environ.get("HF_TOKEN"),
         ignore_patterns=["*.git*", ".gitattributes", "README.md"],
+        force_download=True,  # bypass stale HF cache
     )
     return Path(cached)
 
