@@ -28,7 +28,7 @@ from sentence_transformers import SentenceTransformer
 
 from config import (
     BGE_MODEL_PATH, BGE_HF_REPO, ARTIFACTS_HF_REPO,
-    QUERY_PREFIX, RETRIEVAL_K, RRF_K, DEPT_WEIGHT,
+    QUERY_PREFIX, RETRIEVAL_K, RRF_K,
     TOP_K_DISPLAY, HIGH_CONFIDENCE_THRESHOLD, TRANSFER_THRESHOLD,
     DEFAULT_CREDITS_PER_COURSE, MIN_CREDITS_REQUIRED, ARTIFACTS_DIR,
 )
@@ -233,11 +233,10 @@ def load_artifacts():
 
 # ── retrieval ─────────────────────────────────────────────────────────────────
 
-def retrieve_candidates(vccs_text, vccs_dept, vccs_emb, inst, tfidf, k=RETRIEVAL_K):
-    codes        = inst["codes"]
-    embs         = inst["embeddings"]
-    tfidf_mat    = inst["tfidf_matrix"]
-    code_to_dept = inst["code_to_dept"]
+def retrieve_candidates(vccs_text, vccs_emb, inst, tfidf, k=RETRIEVAL_K):
+    codes     = inst["codes"]
+    embs      = inst["embeddings"]
+    tfidf_mat = inst["tfidf_matrix"]
 
     bge_sims     = embs @ vccs_emb
     bge_ranked   = np.argsort(bge_sims)[::-1]
@@ -245,19 +244,15 @@ def retrieve_candidates(vccs_text, vccs_dept, vccs_emb, inst, tfidf, k=RETRIEVAL
     tfidf_sims   = cosine_similarity(vccs_tfidf, tfidf_mat).flatten()
     tfidf_ranked = np.argsort(tfidf_sims)[::-1]
 
+    # Two-signal RRF: BGE + TF-IDF only.
+    # Dept is used as a reranking feature by XGBoost (dept_sim), not here.
+    # Boosting dept in retrieval floods the top-50 with same-dept courses,
+    # diluting softmax confidence even when all signals are strong.
     rrf_scores = defaultdict(float)
     for rank, idx in enumerate(bge_ranked[:200]):
         rrf_scores[codes[idx]] += 1.0 / (RRF_K + rank + 1)
     for rank, idx in enumerate(tfidf_ranked[:200]):
         rrf_scores[codes[idx]] += 1.0 / (RRF_K + rank + 1)
-    if vccs_dept:
-        dept_scores = sorted(range(len(codes)),
-                             key=lambda i: -SequenceMatcher(
-                                 None, vccs_dept.lower(),
-                                 code_to_dept[codes[i]].lower()
-                             ).ratio())
-        for rank, idx in enumerate(dept_scores[:200]):
-            rrf_scores[codes[idx]] += DEPT_WEIGHT * (1.0 / (RRF_K + rank + 1))
 
     return sorted(rrf_scores.items(), key=lambda x: -x[1])[:k]
 
@@ -370,7 +365,7 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
         inst = a["institutions"][inst_key]
 
         candidates = retrieve_candidates(
-            vccs_text, vccs_dept, vccs_emb, inst, tfidf, RETRIEVAL_K
+            vccs_text, vccs_emb, inst, tfidf, RETRIEVAL_K
         )
 
         feat_vecs      = []
