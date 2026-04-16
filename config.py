@@ -12,13 +12,14 @@ RRF_K = 60
 DEPT_WEIGHT = 0.5
 TOP_K_DISPLAY = 5
 
-# Thresholds — isotonic-calibrated XGBoost probability (absolute, not softmax)
-# calib_prob is fitted on sigmoid(margin) vs ground-truth labels, so it measures
-# "how likely is this specific course to transfer" independently of pool size.
-# At τ=0.65: high precision; "Transfers as X" verdict.
-# At τ=0.35: moderate confidence; "Advisor review recommended".
-HIGH_CONFIDENCE_THRESHOLD = 0.65
-TRANSFER_THRESHOLD = 0.35
+# Thresholds — bias-corrected sigmoid confidence
+# XGBoost trained with scale_pos_weight≈49 (2% positive rate).
+# Subtracting log(49)≈3.89 from each margin shifts the decision boundary to 0.5
+# so probabilities are centered correctly and independent of pool size.
+# Monotone in signal quality: adding correct dept/level never decreases confidence.
+MARGIN_BIAS_CORRECTION = 3.89   # log(scale_pos_weight) ≈ log(49)
+HIGH_CONFIDENCE_THRESHOLD = 0.85
+TRANSFER_THRESHOLD = 0.50
 
 # Transcript evaluation
 DEFAULT_CREDITS_PER_COURSE = 3

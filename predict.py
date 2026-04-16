@@ -20,7 +20,6 @@ import numpy as np
 from collections import defaultdict
 from difflib import SequenceMatcher
 from pathlib import Path
-from scipy.special import softmax as scipy_softmax
 
 import xgboost as xgb
 from sklearn.metrics.pairwise import cosine_similarity
@@ -31,6 +30,7 @@ from config import (
     QUERY_PREFIX, RETRIEVAL_K, RRF_K,
     TOP_K_DISPLAY, HIGH_CONFIDENCE_THRESHOLD, TRANSFER_THRESHOLD,
     DEFAULT_CREDITS_PER_COURSE, MIN_CREDITS_REQUIRED, ARTIFACTS_DIR,
+    MARGIN_BIAS_CORRECTION,
 )
 
 
@@ -342,7 +342,6 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
     """
     a            = load_artifacts()
     clf          = a["classifier"]
-    iso_cal      = a["iso_cal"]
     tfidf        = a["tfidf"]
     feature_names = a["feature_names"]
     bge_model    = a["bge_model"]
@@ -401,26 +400,19 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
             proba   = np.clip(proba, 1e-7, 1 - 1e-7)
             margins = np.log(proba / (1 - proba))
 
-        raw_probs = 1.0 / (1.0 + np.exp(-margins))
-
-        # Softmax used only for ranking (not displayed) — it degrades when many
-        # same-dept candidates are in the pool, diluting confidence unfairly.
-        rank_scores = scipy_softmax(margins)
-
-        # Calibrated probability = isotonic regression on sigmoid(margin).
-        # This is an absolute "how likely is this course to transfer" score
-        # that doesn't depend on pool composition. Used as displayed confidence.
-        if iso_cal is not None:
-            try:
-                calib_probs = iso_cal.predict(raw_probs.reshape(-1, 1)).flatten()
-            except Exception:
-                calib_probs = iso_cal.predict(raw_probs)
-        else:
-            calib_probs = raw_probs
+        # Bias-corrected sigmoid confidence.
+        # XGBoost was trained with scale_pos_weight≈49 (≈2% positive rate), which
+        # shifts the effective decision boundary from margin=0 to margin=log(49)≈3.89.
+        # Subtracting MARGIN_BIAS_CORRECTION re-centers it at 0.5, producing
+        # probabilities that are:
+        #   (a) independent of pool size (no softmax dilution when dept is added)
+        #   (b) monotone: adding correct signals only raises the winner's score
+        #   (c) robust to OOD inputs (no iso_cal overfitting to training distribution)
+        conf = 1.0 / (1.0 + np.exp(-(margins - MARGIN_BIAS_CORRECTION)))
 
         inst_results = []
         for i, (cand_code, rrf_score, sigs) in enumerate(cand_info_list):
-            c    = float(calib_probs[i])   # absolute calibrated probability
+            c    = float(conf[i])
             info = inst["lookup"].get(cand_code, {})
             if c >= HIGH_CONFIDENCE_THRESHOLD:
                 conf_label = "High Confidence"
@@ -433,13 +425,12 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
                 "code":             cand_code,
                 "title":            info.get("title", ""),
                 "confidence":       c,
-                "probability":      c,        # backward compat alias
-                "rank_score":       float(rank_scores[i]),
+                "probability":      c,
                 "confidence_label": conf_label,
                 "signals":          sigs,
             })
 
-        # Sort by calibrated probability (same monotone order as softmax/margin)
+        # Sort by confidence (monotone in margin, same order as softmax)
         inst_results.sort(key=lambda x: -x["confidence"])
         results[inst_key] = inst_results[:top_k]
 
