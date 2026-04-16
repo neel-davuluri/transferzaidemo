@@ -640,11 +640,10 @@ with tab1:
 </div>""", unsafe_allow_html=True)
 
     # ── Inputs ────────────────────────────────────────────────────────────
-    if "example_title" not in st.session_state:
-        st.session_state.example_title = ""
-        st.session_state.example_dept  = ""
-        st.session_state.example_num   = ""
-        st.session_state.example_desc  = ""
+    for _k, _v in [("example_title", ""), ("example_dept", ""),
+                   ("example_num", ""), ("example_desc", "")]:
+        if _k not in st.session_state:
+            st.session_state[_k] = _v
 
     vccs_title = st.text_input(
         "Course Title *",
