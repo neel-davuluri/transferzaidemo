@@ -123,18 +123,21 @@ def _load_institution(key, a, adir):
 def _resolve_artifacts_dir():
     """Return a Path to the artifacts directory, downloading from HF Hub if needed."""
     local = Path(ARTIFACTS_DIR)
-    if local.exists():
+    # On Streamlit Cloud (HF_TOKEN set), always sync from HF Hub into ./artifacts
+    # to ensure we pick up new artifacts after retraining.
+    # Locally, just use the existing directory.
+    if local.exists() and not os.environ.get("HF_TOKEN"):
         return local
     from huggingface_hub import snapshot_download
-    print(f"Artifacts not found locally — downloading from {ARTIFACTS_HF_REPO} ...")
-    cached = snapshot_download(
+    print(f"Downloading artifacts from {ARTIFACTS_HF_REPO} ...")
+    snapshot_download(
         repo_id=ARTIFACTS_HF_REPO,
         repo_type="dataset",
+        local_dir=str(local),
         token=os.environ.get("HF_TOKEN"),
         ignore_patterns=["*.git*", ".gitattributes", "README.md"],
-        force_download=True,  # bypass stale HF cache
     )
-    return Path(cached)
+    return local
 
 
 def _resolve_bge_model():
