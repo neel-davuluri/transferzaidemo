@@ -61,7 +61,7 @@ RERANK_K = 50
 
 FEATURE_NAMES = [
     "bge_sim", "tfidf_sim", "tfidf_title_sim",
-    "dept_prob", "title_sim", "level_ratio", "same_level",
+    "dept_sim", "title_sim", "level_ratio", "same_level",
     "rrf_score",
     "bge_x_dept", "bge_x_title", "bge_x_tfidf",
     "dept_x_title", "dept_x_level",
@@ -285,7 +285,7 @@ ucsc_cat = embed_catalog(ucsc_lk, ccc_equiv, "UCSC")
 # ── retrieval + features ───────────────────────────────────────────────────────
 
 def rrf_retrieve(query_text, query_emb, codes, embs, tfidf_mat,
-                 dept_prior=None, query_dept=None, code_to_dept=None, k=50):
+                 query_dept=None, code_to_dept=None, k=50):
     bge_sims   = embs @ query_emb
     tfidf_sims = cosine_similarity(tfidf.transform([query_text]), tfidf_mat).flatten()
     bge_ranked   = np.argsort(bge_sims)[::-1]
@@ -295,18 +295,19 @@ def rrf_retrieve(query_text, query_emb, codes, embs, tfidf_mat,
         rrf[codes[idx]] += 1.0 / (RRF_K + rank + 1)
     for rank, idx in enumerate(tfidf_ranked[:200]):
         rrf[codes[idx]] += 1.0 / (RRF_K + rank + 1)
-    if dept_prior and query_dept and code_to_dept:
-        prior = dept_prior.get(query_dept, {})
-        if prior:
-            dept_sc = sorted(range(len(codes)),
-                             key=lambda i: -prior.get(code_to_dept.get(codes[i], "UNK"), 0.0))
-            for rank, idx in enumerate(dept_sc[:200]):
-                rrf[codes[idx]] += 0.5 * (1.0 / (RRF_K + rank + 1))
+    if query_dept and code_to_dept:
+        dept_sc = sorted(range(len(codes)),
+                         key=lambda i: -SequenceMatcher(
+                             None, query_dept.lower(),
+                             code_to_dept.get(codes[i], "UNK").lower()
+                         ).ratio())
+        for rank, idx in enumerate(dept_sc[:200]):
+            rrf[codes[idx]] += 0.5 * (1.0 / (RRF_K + rank + 1))
     return {c: sc for c, sc in sorted(rrf.items(), key=lambda x: -x[1])[:k]}
 
 def extract_features(query_emb, query_text, query_title,
                      query_dept, query_number, query_inst,
-                     cand_code, rrf_score, cat, dept_prior):
+                     cand_code, rrf_score, cat):
     idx      = cat["code_to_idx"][cand_code]
     cand_emb = cat["embs"][idx]
     bge_sim  = float(query_emb @ cand_emb)
@@ -323,7 +324,8 @@ def extract_features(query_emb, query_text, query_title,
         tfidf_title_sim = 0.0
 
     cand_dept = cat["code_to_dept"].get(cand_code, "UNK")
-    dept_prob = dept_prior.get(query_dept, {}).get(cand_dept, 0.0) if query_dept else 0.0
+    dept_sim  = SequenceMatcher(None, query_dept.lower(), cand_dept.lower()).ratio() \
+                if query_dept else 0.0
     title_sim = SequenceMatcher(None, clean_text(query_title), clean_text(cand_title)).ratio()
 
     cand_num = extract_number(cand_code)
@@ -335,18 +337,18 @@ def extract_features(query_emb, query_text, query_title,
         level_ratio = 1.0 - diff / 3.0
         same_level  = float(diff == 0)
     else:
-        level_ratio = 0.0
+        level_ratio = 0.5  # neutral: level unknown
         same_level  = 0.0
 
     return [
         bge_sim, tfidf_sim, tfidf_title_sim,
-        dept_prob, title_sim, level_ratio, same_level,
+        dept_sim, title_sim, level_ratio, same_level,
         rrf_score,
-        bge_sim * dept_prob,
+        bge_sim * dept_sim,
         bge_sim * title_sim,
         bge_sim * tfidf_sim,
-        dept_prob * title_sim,
-        dept_prob * level_ratio,
+        dept_sim * title_sim,
+        dept_sim * level_ratio,
     ]
 
 def vccs_query(row):
@@ -379,7 +381,7 @@ def ccc_dept_num(row):
     return (p["dept"] if p else "UNK", p["number"] if p else 0)
 
 
-def collect(train_df, get_query, get_target, get_dept_num, query_inst, cat, dept_prior, label):
+def collect(train_df, get_query, get_target, get_dept_num, query_inst, cat, label):
     rows, labels = [], []
     total = len(train_df)
     for i, (_, row) in enumerate(train_df.iterrows()):
@@ -390,12 +392,11 @@ def collect(train_df, get_query, get_target, get_dept_num, query_inst, cat, dept
         q_dept, q_number = get_dept_num(row)
         q_emb  = bge.encode([f"{QUERY_PREFIX}{qt}"], normalize_embeddings=True)[0]
         ranked = rrf_retrieve(qt, q_emb, cat["codes"], cat["embs"], cat["tfidf_mat"],
-                              dept_prior=dept_prior, query_dept=q_dept,
-                              code_to_dept=cat["code_to_dept"])
+                              query_dept=q_dept, code_to_dept=cat["code_to_dept"])
 
         for code, rrf_sc in ranked.items():
             feats = extract_features(q_emb, qt, q_title, q_dept, q_number, query_inst,
-                                     code, rrf_sc, cat, dept_prior)
+                                     code, rrf_sc, cat)
             rows.append(feats)
             labels.append(int(code == target))
 
@@ -405,11 +406,11 @@ def collect(train_df, get_query, get_target, get_dept_num, query_inst, cat, dept
 
 
 print("\n--- Collecting W&M training features ---")
-wm_r,  wm_l  = collect(wm_train,  vccs_query, wm_target,  wm_dept_num,  "vccs",     wm_cat,   wm_dept_prior,  "W&M")
+wm_r,  wm_l  = collect(wm_train,  vccs_query, wm_target,  wm_dept_num,  "vccs",     wm_cat,   "W&M")
 print("\n--- Collecting VT training features ---")
-vt_r,  vt_l  = collect(vt_train,  vccs_query, vt_target,  wm_dept_num,  "vccs",     vt_cat,   vt_dept_prior,  "VT")
+vt_r,  vt_l  = collect(vt_train,  vccs_query, vt_target,  wm_dept_num,  "vccs",     vt_cat,   "VT")
 print("\n--- Collecting CCC training features ---")
-ccc_r, ccc_l = collect(ccc_train, ccc_query,  ccc_target, ccc_dept_num, "ucsc_ccc", ucsc_cat, ccc_dept_prior, "CCC")
+ccc_r, ccc_l = collect(ccc_train, ccc_query,  ccc_target, ccc_dept_num, "ucsc_ccc", ucsc_cat, "CCC")
 
 X_train = np.array(wm_r  + vt_r  + ccc_r,  dtype=np.float64)
 y_train = np.array(wm_l  + vt_l  + ccc_l,  dtype=int)
@@ -460,7 +461,7 @@ def compute_ece(y_true, y_prob, n_bins=10):
         err += (mask.sum() / len(y_true)) * abs(y_true[mask].mean() - y_prob[mask].mean())
     return err
 
-def quick_eval(test_df, get_query, get_target, get_dept_num, query_inst, cat, dept_prior, label):
+def quick_eval(test_df, get_query, get_target, get_dept_num, query_inst, cat, label):
     t1_rrf = t1_lr = t3_lr = found = 0
     all_y, all_p = [], []
     query_confs  = []
@@ -474,8 +475,7 @@ def quick_eval(test_df, get_query, get_target, get_dept_num, query_inst, cat, de
         q_dept, q_number = get_dept_num(row)
         q_emb  = bge.encode([f"{QUERY_PREFIX}{qt}"], normalize_embeddings=True)[0]
         ranked = rrf_retrieve(qt, q_emb, cat["codes"], cat["embs"], cat["tfidf_mat"],
-                              dept_prior=dept_prior, query_dept=q_dept,
-                              code_to_dept=cat["code_to_dept"])
+                              query_dept=q_dept, code_to_dept=cat["code_to_dept"])
 
         rrf_order = list(ranked.keys())
         if target in rrf_order[:1]: t1_rrf += 1
@@ -483,7 +483,7 @@ def quick_eval(test_df, get_query, get_target, get_dept_num, query_inst, cat, de
         pool = rrf_order[:RERANK_K]
         feat_mat = [
             extract_features(q_emb, qt, q_title, q_dept, q_number, query_inst,
-                             code, ranked.get(code, 0.0), cat, dept_prior)
+                             code, ranked.get(code, 0.0), cat)
             for code in pool
         ]
         X_q      = np.array(feat_mat, dtype=np.float64)
@@ -543,9 +543,9 @@ def quick_eval(test_df, get_query, get_target, get_dept_num, query_inst, cat, de
     }
 
 print("\n--- Evaluating (test sets) ---")
-sc_wm   = quick_eval(wm_test,  vccs_query, wm_target,  wm_dept_num,  "vccs",     wm_cat,   wm_dept_prior,  "W&M")
-sc_vt   = quick_eval(vt_test,  vccs_query, vt_target,  wm_dept_num,  "vccs",     vt_cat,   vt_dept_prior,  "VT")
-sc_ucsc = quick_eval(ccc_test, ccc_query,  ccc_target, ccc_dept_num, "ucsc_ccc", ucsc_cat, ccc_dept_prior, "CCC→UCSC")
+sc_wm   = quick_eval(wm_test,  vccs_query, wm_target,  wm_dept_num,  "vccs",     wm_cat,   "W&M")
+sc_vt   = quick_eval(vt_test,  vccs_query, vt_target,  wm_dept_num,  "vccs",     vt_cat,   "VT")
+sc_ucsc = quick_eval(ccc_test, ccc_query,  ccc_target, ccc_dept_num, "ucsc_ccc", ucsc_cat, "CCC→UCSC")
 
 scorecard = {
     "wm":   sc_wm,
@@ -572,10 +572,7 @@ with open(ARTIFACTS / "tfidf.pkl", "wb") as f:
     pickle.dump(tfidf, f)
 print("  tfidf.pkl")
 
-dept_prior_map = {"wm": wm_dept_prior, "vt": vt_dept_prior, "ucsc": ccc_dept_prior}
-with open(ARTIFACTS / "dept_prior_map.pkl", "wb") as f:
-    pickle.dump(dept_prior_map, f)
-print("  dept_prior_map.pkl")
+# dept_prior_map.pkl no longer needed — dept_sim replaces the lookup table
 
 with open(ARTIFACTS / "feature_names.pkl", "wb") as f:
     pickle.dump(FEATURE_NAMES, f)

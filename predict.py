@@ -189,45 +189,12 @@ def load_artifacts():
     with open(adir / "tfidf.pkl", "rb") as f:
         a["tfidf"] = pickle.load(f)
 
-    # Per-institution dept priors (new format) — fall back to legacy single prior
-    if (adir / "dept_prior_map.pkl").exists():
-        with open(adir / "dept_prior_map.pkl", "rb") as f:
-            a["dept_prior_map"] = pickle.load(f)
-    elif (adir / "dept_prior.pkl").exists():
-        with open(adir / "dept_prior.pkl", "rb") as f:
-            prior = pickle.load(f)
-        # Apply legacy single prior to all known institutions
-        a["dept_prior_map"] = {k: prior for k in INSTITUTION_REGISTRY}
-    else:
-        a["dept_prior_map"] = {}
-
-    # Build a cross-institution average prior for institutions not in training data
-    # (e.g. Northeastern). Averages wm/vt/ucsc so cross-dept patterns like
-    # APMA→MATH or MTH→MATH still get reasonable dept_prob values.
-    trained = [p for p in a["dept_prior_map"].values()]
-    if trained:
-        all_src_depts = set(d for p in trained for d in p)
-        avg_prior = {}
-        for src in all_src_depts:
-            tgt_counts: dict = defaultdict(float)
-            n = 0
-            for p in trained:
-                if src in p:
-                    for tgt, prob in p[src].items():
-                        tgt_counts[tgt] += prob
-                    n += 1
-            if n:
-                avg_prior[src] = {tgt: v / n for tgt, v in tgt_counts.items()}
-        a["_avg_dept_prior"] = avg_prior
-    else:
-        a["_avg_dept_prior"] = {}
-
     if (adir / "feature_names.pkl").exists():
         with open(adir / "feature_names.pkl", "rb") as f:
             a["feature_names"] = pickle.load(f)
     else:
         a["feature_names"] = [
-            "bge_sim", "tfidf_sim", "tfidf_title_sim", "dept_prob", "title_sim",
+            "bge_sim", "tfidf_sim", "tfidf_title_sim", "dept_sim", "title_sim",
             "level_ratio", "same_level", "rrf_score",
             "bge_x_dept", "bge_x_title", "bge_x_tfidf", "dept_x_title", "dept_x_level",
         ]
@@ -257,7 +224,7 @@ def load_artifacts():
 
 # ── retrieval ─────────────────────────────────────────────────────────────────
 
-def retrieve_candidates(vccs_text, vccs_dept, vccs_emb, inst, dept_prior, tfidf, k=RETRIEVAL_K):
+def retrieve_candidates(vccs_text, vccs_dept, vccs_emb, inst, tfidf, k=RETRIEVAL_K):
     codes        = inst["codes"]
     embs         = inst["embeddings"]
     tfidf_mat    = inst["tfidf_matrix"]
@@ -269,17 +236,19 @@ def retrieve_candidates(vccs_text, vccs_dept, vccs_emb, inst, dept_prior, tfidf,
     tfidf_sims   = cosine_similarity(vccs_tfidf, tfidf_mat).flatten()
     tfidf_ranked = np.argsort(tfidf_sims)[::-1]
 
-    prior_probs  = dept_prior.get(vccs_dept, {}) if vccs_dept else {}
-    dept_scores  = sorted(range(len(codes)),
-                          key=lambda i: -prior_probs.get(code_to_dept[codes[i]], 0.0))
-
     rrf_scores = defaultdict(float)
     for rank, idx in enumerate(bge_ranked[:200]):
         rrf_scores[codes[idx]] += 1.0 / (RRF_K + rank + 1)
     for rank, idx in enumerate(tfidf_ranked[:200]):
         rrf_scores[codes[idx]] += 1.0 / (RRF_K + rank + 1)
-    for rank, idx in enumerate(dept_scores[:200]):
-        rrf_scores[codes[idx]] += DEPT_WEIGHT * (1.0 / (RRF_K + rank + 1))
+    if vccs_dept:
+        dept_scores = sorted(range(len(codes)),
+                             key=lambda i: -SequenceMatcher(
+                                 None, vccs_dept.lower(),
+                                 code_to_dept[codes[i]].lower()
+                             ).ratio())
+        for rank, idx in enumerate(dept_scores[:200]):
+            rrf_scores[codes[idx]] += DEPT_WEIGHT * (1.0 / (RRF_K + rank + 1))
 
     return sorted(rrf_scores.items(), key=lambda x: -x[1])[:k]
 
@@ -287,7 +256,7 @@ def retrieve_candidates(vccs_text, vccs_dept, vccs_emb, inst, dept_prior, tfidf,
 # ── feature extraction ────────────────────────────────────────────────────────
 
 def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
-                    cand_code, rrf_score, inst, inst_key, dept_prior, tfidf):
+                    cand_code, rrf_score, inst, inst_key, tfidf):
     code_to_idx  = inst["code_to_idx"]
     code_to_dept = inst["code_to_dept"]
     lookup       = inst["lookup"]
@@ -301,7 +270,8 @@ def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
     tfidf_sim = float(cosine_similarity(vecs[0:1], vecs[1:2])[0, 0])
 
     cand_dept = code_to_dept.get(cand_code, "UNK")
-    dept_prob = dept_prior.get(vccs_dept, {}).get(cand_dept, 0.0) if vccs_dept else 0.0
+    dept_sim  = SequenceMatcher(None, vccs_dept.lower(), cand_dept.lower()).ratio() \
+                if vccs_dept else 0.0
 
     cand_title = lookup.get(cand_code, {}).get("title", "")
     title_sim  = SequenceMatcher(None, clean_text(vccs_title), clean_text(cand_title)).ratio()
@@ -322,23 +292,23 @@ def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
         level_ratio = 1.0 - diff / 3.0
         same_level  = float(diff == 0)
     else:
-        level_ratio = 0.0
+        level_ratio = 0.5  # neutral: level unknown
         same_level  = 0.0
 
     return {
         "bge_sim":         bge_sim,
         "tfidf_sim":       tfidf_sim,
         "tfidf_title_sim": tfidf_title_sim,
-        "dept_prob":       dept_prob,
+        "dept_sim":        dept_sim,
         "title_sim":       title_sim,
         "level_ratio":     level_ratio,
         "same_level":      same_level,
         "rrf_score":       rrf_score,
-        "bge_x_dept":      bge_sim * dept_prob,
+        "bge_x_dept":      bge_sim * dept_sim,
         "bge_x_title":     bge_sim * title_sim,
         "bge_x_tfidf":     bge_sim * tfidf_sim,
-        "dept_x_title":    dept_prob * title_sim,
-        "dept_x_level":    dept_prob * level_ratio,
+        "dept_x_title":    dept_sim * title_sim,
+        "dept_x_level":    dept_sim * level_ratio,
     }
 
 
@@ -390,13 +360,8 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
             continue
         inst = a["institutions"][inst_key]
 
-        # Use per-institution dept prior if available; fall back to the
-        # cross-institution average prior so patterns like APMA→MATH still score
-        # correctly for institutions not in training data (e.g. Northeastern).
-        dept_prior = a["dept_prior_map"].get(inst_key) or a.get("_avg_dept_prior", {})
-
         candidates = retrieve_candidates(
-            vccs_text, vccs_dept, vccs_emb, inst, dept_prior, tfidf, k=RETRIEVAL_K
+            vccs_text, vccs_dept, vccs_emb, inst, tfidf, RETRIEVAL_K
         )
 
         feat_vecs      = []
@@ -404,7 +369,7 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
         for cand_code, rrf_score in candidates:
             sigs = extract_signals(
                 vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title_c,
-                cand_code, rrf_score, inst, inst_key, dept_prior, tfidf
+                cand_code, rrf_score, inst, inst_key, tfidf
             )
             feat_vec = [sigs.get(fn, 0.0) for fn in feature_names]
             feat_vecs.append(feat_vec)
