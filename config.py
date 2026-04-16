@@ -1,7 +1,9 @@
 """Configuration constants for TransferZAI v3."""
 
 # Model
-BGE_MODEL_PATH = "./finetuned_bge_three"
+BGE_MODEL_PATH       = "./finetuned_bge_three"   # local path (takes precedence)
+BGE_HF_REPO          = "hyperalpha/transferzai-bge"
+ARTIFACTS_HF_REPO    = "hyperalpha/transferzai-artifacts"
 QUERY_PREFIX = "Represent this course for finding transfer equivalents: "
 
 # Retrieval

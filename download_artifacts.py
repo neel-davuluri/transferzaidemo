@@ -1,51 +1,52 @@
 """
-Download pre-trained artifacts from GitHub Releases.
-Called automatically by predict.py if artifacts/ doesn't exist.
+Download pre-trained artifacts and fine-tuned BGE model from HuggingFace Hub.
+Called automatically by predict.py on first run if local paths are missing.
 
-Usage:
+Manual usage:
   python download_artifacts.py
-
-If this fails (e.g., on Streamlit Cloud), download manually from:
-  https://github.com/neel-davuluri/transferzaidemo/releases
-and extract into the repo root.
 """
 
 import os
-import sys
-import tarfile
-import urllib.request
 from pathlib import Path
 
-REPO = "neel-davuluri/transferzaidemo"
-RELEASE_TAG = "v3.0"
-ARTIFACT_URL = f"https://github.com/{REPO}/releases/download/{RELEASE_TAG}/artifacts.tar.gz"
-ARTIFACTS_DIR = "./artifacts"
+ARTIFACTS_HF_REPO = "hyperalpha/transferzai-artifacts"
+BGE_HF_REPO       = "hyperalpha/transferzai-bge"
+ARTIFACTS_DIR     = "./artifacts"
+BGE_LOCAL_PATH    = "./finetuned_bge_three"
+
 
 def download_artifacts():
-    """Download and extract artifacts if they don't exist."""
-    if Path(ARTIFACTS_DIR).exists():
-        print(f"{ARTIFACTS_DIR} already exists, skipping download.")
-        return
+    """Download artifacts and BGE model from HF Hub if not present locally."""
+    from huggingface_hub import snapshot_download
 
-    print(f"Artifacts not found. Attempting to download from {ARTIFACT_URL}...")
-    try:
-        # Download
-        tar_path = "/tmp/artifacts.tar.gz"
-        urllib.request.urlretrieve(ARTIFACT_URL, tar_path)
-        print(f"Downloaded to {tar_path}")
+    token = os.environ.get("HF_TOKEN")
 
-        # Extract
-        with tarfile.open(tar_path, "r:gz") as tar:
-            tar.extractall(".")
-        os.remove(tar_path)
-        print(f"✓ Extracted to {ARTIFACTS_DIR}")
-    except Exception as e:
-        print(f"✗ Failed to download artifacts: {e}", file=sys.stderr)
-        print(f"\nTo fix this:", file=sys.stderr)
-        print(f"1. Visit: https://github.com/{REPO}/releases/tag/{RELEASE_TAG}", file=sys.stderr)
-        print(f"2. Download: artifacts.tar.gz", file=sys.stderr)
-        print(f"3. Extract to repo root: tar -xzf artifacts.tar.gz", file=sys.stderr)
-        sys.exit(1)
+    if not Path(ARTIFACTS_DIR).exists():
+        print(f"Downloading artifacts from {ARTIFACTS_HF_REPO} ...")
+        snapshot_download(
+            repo_id=ARTIFACTS_HF_REPO,
+            repo_type="dataset",
+            local_dir=ARTIFACTS_DIR,
+            token=token,
+            ignore_patterns=["*.git*", ".gitattributes", "README.md"],
+        )
+        print(f"Artifacts saved to {ARTIFACTS_DIR}")
+    else:
+        print(f"{ARTIFACTS_DIR} already exists, skipping.")
+
+    if not Path(BGE_LOCAL_PATH).exists():
+        print(f"Downloading fine-tuned BGE model from {BGE_HF_REPO} ...")
+        snapshot_download(
+            repo_id=BGE_HF_REPO,
+            repo_type="model",
+            local_dir=BGE_LOCAL_PATH,
+            token=token,
+            ignore_patterns=["*.git*", ".gitattributes", "README.md"],
+        )
+        print(f"BGE model saved to {BGE_LOCAL_PATH}")
+    else:
+        print(f"{BGE_LOCAL_PATH} already exists, skipping.")
+
 
 if __name__ == "__main__":
     download_artifacts()
