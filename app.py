@@ -16,25 +16,26 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* ── tokens ─────────────────────────────────────────────────────────── */
+/* ── tokens (Shadcn zinc dark — WCAG AA compliant) ───────────────────── */
 :root {
-  --bg:         #090c10;
-  --surface:    #0d1117;
-  --surface-2:  #161b22;
-  --surface-3:  #1c2128;
-  --border:     #21262d;
-  --border-2:   #30363d;
-  --accent:     #58a6ff;
-  --accent-dim: rgba(88,166,255,0.12);
-  --text-1:     #f0f6fc;
-  --text-2:     #8b949e;
-  --text-3:     #3d444d;
-  --green:      #3fb950;
-  --green-bg:   rgba(63,185,80,0.10);
-  --amber:      #d29922;
-  --amber-bg:   rgba(210,153,34,0.10);
-  --red:        #f85149;
-  --red-bg:     rgba(248,81,73,0.10);
+  --bg:         #09090b;   /* zinc-950 */
+  --surface:    #18181b;   /* zinc-900 */
+  --surface-2:  #27272a;   /* zinc-800 */
+  --surface-3:  #3f3f46;   /* zinc-700 */
+  --border:     #3f3f46;   /* zinc-700  — visible against surface */
+  --border-2:   #52525b;   /* zinc-600  — stronger borders */
+  --accent:     #60a5fa;   /* blue-400  — bright on dark */
+  --accent-dim: rgba(96,165,250,0.15);
+  --text-1:     #fafafa;   /* zinc-50   — 18:1 on bg */
+  --text-2:     #d4d4d8;   /* zinc-300  — 10:1 on bg  */
+  --text-3:     #a1a1aa;   /* zinc-400  —  6:1 on bg  */
+  --text-4:     #71717a;   /* zinc-500  —  4:1 on bg (labels only) */
+  --green:      #4ade80;   /* green-400 — bright, readable */
+  --green-bg:   rgba(74,222,128,0.10);
+  --amber:      #fbbf24;   /* amber-400 — clearly visible */
+  --amber-bg:   rgba(251,191,36,0.10);
+  --red:        #f87171;   /* red-400   — readable, not harsh */
+  --red-bg:     rgba(248,113,113,0.10);
   --radius:     8px;
   --radius-lg:  12px;
 }
@@ -99,7 +100,7 @@ h1,h2,h3,h4,h5 { color: var(--text-1) !important; letter-spacing: -0.4px; }
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.08em !important;
-  color: var(--text-3) !important;
+  color: var(--text-3) !important;  /* zinc-400 — 6:1, clearly legible */
 }
 
 /* ── hero search input (override default sizing) ─────────────────────── */
@@ -176,7 +177,7 @@ h1,h2,h3,h4,h5 { color: var(--text-1) !important; letter-spacing: -0.4px; }
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.07em !important;
-  color: var(--text-3) !important;
+  color: var(--text-3) !important;  /* zinc-400 */
 }
 [data-testid="stMetricValue"] {
   font-size: 1.5rem !important;
@@ -199,7 +200,7 @@ hr { border: none !important; border-top: 1px solid var(--border) !important; ma
 table { width:100%; border-collapse:collapse; font-size:0.85rem; }
 th {
   background: var(--surface-2) !important;
-  color: var(--text-3) !important;
+  color: var(--text-3) !important;  /* zinc-400 — legible */
   font-size: 0.68rem !important;
   font-weight: 700;
   text-transform: uppercase;
@@ -237,7 +238,7 @@ tr:hover td { background: var(--surface-2) !important; }
 }
 .tzai-wordmark-tag {
   font-size: 0.8rem;
-  color: var(--text-3);
+  color: var(--text-3);   /* zinc-400 — legible subtitle */
   font-weight: 400;
   letter-spacing: 0;
 }
@@ -371,9 +372,9 @@ tr:hover td { background: var(--surface-2) !important; }
 
 /* ── inst section heading ────────────────────────────────────────────── */
 .tzai-inst-head {
-  font-size: 0.68rem; font-weight: 700;
+  font-size: 0.75rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.1em;
-  color: var(--text-3);
+  color: var(--text-2);   /* zinc-300 */
   margin: 1.5rem 0 0.75rem;
   display: flex; align-items: center; gap: 0.5rem;
 }
@@ -393,7 +394,7 @@ tr:hover td { background: var(--surface-2) !important; }
   color: var(--text-2); margin-bottom: 0.35rem;
 }
 .tzai-empty-sub {
-  font-size: 0.82rem; color: var(--text-3);
+  font-size: 0.82rem; color: var(--text-3);  /* zinc-400 — legible */
 }
 
 /* ── summary banner ──────────────────────────────────────────────────── */
@@ -433,7 +434,7 @@ tr:hover td { background: var(--surface-2) !important; }
 .tzai-perf-inst-name {
   font-size: 0.72rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--text-3); margin-bottom: 0.7rem;
+  color: var(--text-2); margin-bottom: 0.7rem;   /* zinc-300 */
 }
 .tzai-perf-row { margin-bottom: 0.6rem; }
 .tzai-perf-top {
@@ -447,16 +448,16 @@ tr:hover td { background: var(--surface-2) !important; }
 
 /* ── section label ───────────────────────────────────────────────────── */
 .tzai-label {
-  font-size: 0.68rem; font-weight: 700;
+  font-size: 0.72rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.09em;
-  color: var(--text-3); margin-bottom: 0.65rem;
+  color: var(--text-2); margin-bottom: 0.65rem;  /* zinc-300 — clearly visible */
 }
 
 /* ── col header (transcript table) ──────────────────────────────────── */
 .tzai-col-hdr {
-  font-size: 0.65rem; font-weight: 700;
+  font-size: 0.68rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--text-3); padding-bottom: 0.3rem;
+  color: var(--text-3); padding-bottom: 0.3rem;  /* zinc-400 */
 }
 
 /* ── model card ──────────────────────────────────────────────────────── */
@@ -471,10 +472,10 @@ tr:hover td { background: var(--surface-2) !important; }
   margin-bottom: 1rem;
 }
 .tzai-mc-h {
-  font-size: 0.68rem; font-weight: 700;
+  font-size: 0.72rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.09em;
   color: var(--accent); padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-2);
   margin-bottom: 0.9rem;
 }
 
@@ -608,20 +609,55 @@ with tab1:
                     st.session_state.sel_insts.append(k)
                 st.rerun()
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    # ── How to use ────────────────────────────────────────────────────────
+    st.markdown("""
+<div style="background:var(--surface);border:1px solid var(--border-2);
+            border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:1.5rem;">
+  <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;
+              letter-spacing:0.09em;color:var(--accent);margin-bottom:0.7rem;">
+    How to use
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1.5rem;">
+    <div style="font-size:0.83rem;color:var(--text-2);">
+      <span style="color:var(--text-1);font-weight:600;">1. Pick institutions</span><br>
+      Toggle which schools you want to check against using the buttons above.
+    </div>
+    <div style="font-size:0.83rem;color:var(--text-2);">
+      <span style="color:var(--text-1);font-weight:600;">2. Enter your course</span><br>
+      Type the course title and paste the catalog description for best accuracy.
+    </div>
+    <div style="font-size:0.83rem;color:var(--text-2);">
+      <span style="color:var(--text-1);font-weight:600;">3. Optionally add dept & number</span><br>
+      Open <em>Advanced</em> to add your department code and course number — improves results.
+    </div>
+    <div style="font-size:0.83rem;color:var(--text-2);">
+      <span style="color:var(--text-1);font-weight:600;">4. Read the verdict</span><br>
+      <span style="color:var(--green);font-weight:600;">Green = confirmed transfer.</span>
+      <span style="color:var(--amber);font-weight:600;"> Yellow = likely, ask advisor.</span>
+      <span style="color:var(--text-3);"> Gray = low confidence.</span>
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
 
-    # Main search input
-    # Pre-fill from example click
+    # ── Inputs ────────────────────────────────────────────────────────────
     if "example_title" not in st.session_state:
         st.session_state.example_title = ""
         st.session_state.example_dept  = ""
         st.session_state.example_num   = ""
+        st.session_state.example_desc  = ""
 
     vccs_title = st.text_input(
-        "Course Title",
+        "Course Title *",
         value=st.session_state.example_title,
-        placeholder="What course are you looking up?  e.g. Calculus I",
+        placeholder="e.g. Calculus I",
         key="title_input",
+    )
+    vccs_desc = st.text_area(
+        "Course Description *",
+        value=st.session_state.example_desc,
+        placeholder="Paste the course catalog description here — this significantly improves match accuracy",
+        height=90,
+        key="desc_input",
     )
 
     # Advanced toggle
@@ -636,13 +672,9 @@ with tab1:
             vccs_number = st.text_input("Course Number",
                 value=st.session_state.example_num,
                 placeholder="101, 211, 263…")
-        vccs_desc = st.text_area("Description (optional)",
-            placeholder="Paste catalog description for higher accuracy",
-            height=72)
     else:
-        vccs_dept = st.session_state.example_dept
+        vccs_dept   = st.session_state.example_dept
         vccs_number = st.session_state.example_num
-        vccs_desc = ""
 
     top_k = st.select_slider("Results per institution",
         options=[3, 5, 7, 10], value=5)
@@ -653,10 +685,11 @@ with tab1:
 
     if search_clicked:
         if not vccs_title.strip():
-            st.warning("Enter a course title to search.")
+            st.warning("Course title is required.")
+        elif not vccs_desc.strip():
+            st.warning("Course description is required — paste the catalog description for accurate results.")
         else:
             with st.spinner(""):
-                # Show skeleton while loading
                 skeletons = st.empty()
                 skeletons.markdown(
                     ''.join(['<div class="tzai-skeleton"></div>',
@@ -672,12 +705,11 @@ with tab1:
         st.markdown("""
         <div class="tzai-empty">
           <div class="tzai-empty-ico">⟳</div>
-          <div class="tzai-empty-title">Enter a course title above</div>
-          <div class="tzai-empty-sub">or try one of these examples</div>
+          <div class="tzai-empty-title">Enter a course above to get started</div>
+          <div class="tzai-empty-sub">or click an example below</div>
         </div>""", unsafe_allow_html=True)
 
-        # Clickable example chips — use columns as buttons
-        st.markdown('<div class="tzai-label" style="text-align:center;">Examples</div>',
+        st.markdown('<div class="tzai-label" style="text-align:center;margin-top:0.5rem;">Quick examples</div>',
                     unsafe_allow_html=True)
         ex_cols = st.columns(len(EXAMPLES))
         for i, (title, dept, num) in enumerate(EXAMPLES):
@@ -686,6 +718,7 @@ with tab1:
                     st.session_state.example_title = title
                     st.session_state.example_dept  = dept
                     st.session_state.example_num   = num
+                    st.session_state.example_desc  = ""
                     st.rerun()
 
 
