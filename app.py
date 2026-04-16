@@ -387,8 +387,10 @@ tr:hover td { background: var(--surface-2) !important; }
 """, unsafe_allow_html=True)
 
 # ── Load ──────────────────────────────────────────────────────────────────────
+_ARTIFACT_VERSION = "2026-04-16-v3"  # bump to force cache invalidation
+
 @st.cache_resource(show_spinner=False)
-def init():
+def init(_version=_ARTIFACT_VERSION):
     try:
         return load_artifacts()
     except FileNotFoundError as e:
