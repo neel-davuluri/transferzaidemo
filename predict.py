@@ -207,14 +207,9 @@ def load_artifacts():
     else:
         a["scorecard"] = {}
 
-    # Per-institution high-confidence thresholds from scorecard op_tau.
-    # op_tau is the lowest τ where precision ≥ 90% on the held-out test set.
-    # Falls back to the global constant if scorecard is missing or op_tau is 0.
-    a["high_conf_thresholds"] = {
-        k: (a["scorecard"].get(k, {}).get("op_tau") or HIGH_CONFIDENCE_THRESHOLD)
-        for k in INSTITUTION_REGISTRY
-    }
-    print(f"[DIAG] high_conf_thresholds: {a['high_conf_thresholds']}")
+    # Confidence is now calibrated probability (calib_prob), not softmax.
+    # Use a single global threshold; scorecard op_tau values were softmax-based.
+    print(f"[DIAG] HIGH_CONFIDENCE_THRESHOLD: {HIGH_CONFIDENCE_THRESHOLD}")
 
     print("Loading fine-tuned BGE model...")
     a["bge_model"] = SentenceTransformer(
@@ -260,7 +255,7 @@ def retrieve_candidates(vccs_text, vccs_emb, inst, tfidf, k=RETRIEVAL_K):
 # ── feature extraction ────────────────────────────────────────────────────────
 
 def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
-                    cand_code, rrf_score, inst, inst_key, tfidf):
+                    cand_code, rrf_score, inst, inst_key, tfidf, vccs_level=0):
     code_to_idx  = inst["code_to_idx"]
     code_to_dept = inst["code_to_dept"]
     lookup       = inst["lookup"]
@@ -286,13 +281,19 @@ def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
     else:
         tfidf_title_sim = 0.0
 
-    parsed  = parse_target_course(cand_code)
+    parsed   = parse_target_course(cand_code)
     vccs_num = int(vccs_number) if str(vccs_number).isdigit() else 0
-    if vccs_num and parsed:
+    # vccs_level=1-4 takes precedence over deriving from course number
+    if vccs_level > 0:
+        q_lvl = vccs_level
+    elif vccs_num:
+        q_lvl = academic_level(vccs_num, "vccs")
+    else:
+        q_lvl = 0
+    if q_lvl > 0 and parsed:
         tgt_num    = parsed["number"]
-        vccs_lvl   = academic_level(vccs_num, "vccs")
         tgt_lvl    = academic_level(tgt_num, inst_key)
-        diff       = abs(vccs_lvl - tgt_lvl)
+        diff       = abs(q_lvl - tgt_lvl)
         level_ratio = 1.0 - diff / 3.0
         same_level  = float(diff == 0)
     else:
@@ -319,7 +320,7 @@ def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
 # ── prediction ────────────────────────────────────────────────────────────────
 
 def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
-                     institutions=None, top_k=TOP_K_DISPLAY):
+                     vccs_level=0, institutions=None, top_k=TOP_K_DISPLAY):
     """
     Predict transfer equivalents for a course across one or more institutions.
 
@@ -373,7 +374,8 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
         for cand_code, rrf_score in candidates:
             sigs = extract_signals(
                 vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title_c,
-                cand_code, rrf_score, inst, inst_key, tfidf
+                cand_code, rrf_score, inst, inst_key, tfidf,
+                vccs_level=vccs_level,
             )
             feat_vec = [sigs.get(fn, 0.0) for fn in feature_names]
             feat_vecs.append(feat_vec)
@@ -401,10 +403,13 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
 
         raw_probs = 1.0 / (1.0 + np.exp(-margins))
 
-        # Per-query softmax over margins for confidence
-        conf = scipy_softmax(margins)
+        # Softmax used only for ranking (not displayed) — it degrades when many
+        # same-dept candidates are in the pool, diluting confidence unfairly.
+        rank_scores = scipy_softmax(margins)
 
-        # Calibrated probabilities for display only
+        # Calibrated probability = isotonic regression on sigmoid(margin).
+        # This is an absolute "how likely is this course to transfer" score
+        # that doesn't depend on pool composition. Used as displayed confidence.
         if iso_cal is not None:
             try:
                 calib_probs = iso_cal.predict(raw_probs.reshape(-1, 1)).flatten()
@@ -413,13 +418,11 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
         else:
             calib_probs = raw_probs
 
-        high_tau = a["high_conf_thresholds"].get(inst_key, HIGH_CONFIDENCE_THRESHOLD)
-
         inst_results = []
         for i, (cand_code, rrf_score, sigs) in enumerate(cand_info_list):
-            c     = float(conf[i])
-            info  = inst["lookup"].get(cand_code, {})
-            if c >= high_tau:
+            c    = float(calib_probs[i])   # absolute calibrated probability
+            info = inst["lookup"].get(cand_code, {})
+            if c >= HIGH_CONFIDENCE_THRESHOLD:
                 conf_label = "High Confidence"
             elif c >= TRANSFER_THRESHOLD:
                 conf_label = "Possible Match"
@@ -427,15 +430,16 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
                 conf_label = "Low Confidence"
 
             inst_results.append({
-                "code":           cand_code,
-                "title":          info.get("title", ""),
-                "confidence":     c,
-                "probability":    c,          # keep old field name for backward compat
-                "calib_prob":     float(calib_probs[i]),
+                "code":             cand_code,
+                "title":            info.get("title", ""),
+                "confidence":       c,
+                "probability":      c,        # backward compat alias
+                "rank_score":       float(rank_scores[i]),
                 "confidence_label": conf_label,
-                "signals":        sigs,
+                "signals":          sigs,
             })
 
+        # Sort by calibrated probability (same monotone order as softmax/margin)
         inst_results.sort(key=lambda x: -x["confidence"])
         results[inst_key] = inst_results[:top_k]
 

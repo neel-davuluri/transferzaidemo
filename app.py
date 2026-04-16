@@ -386,7 +386,7 @@ tr:hover td { background: var(--surface-2) !important; }
 """, unsafe_allow_html=True)
 
 # ── Load ──────────────────────────────────────────────────────────────────────
-_ARTIFACT_VERSION = "2026-04-16-v6"  # bump to force cache invalidation
+_ARTIFACT_VERSION = "2026-04-16-v7"  # bump to force cache invalidation
 
 @st.cache_resource(show_spinner=False)
 def init(_version=_ARTIFACT_VERSION):
@@ -478,7 +478,7 @@ with tab1:
     # Session state init (each key independently)
     for _k, _v in [("sel_insts", list(INSTS.keys())),
                    ("example_title",""), ("example_dept",""),
-                   ("example_num",""), ("example_desc","")]:
+                   ("example_level", 0), ("example_desc","")]:
         if _k not in st.session_state:
             st.session_state[_k] = _v
 
@@ -489,7 +489,7 @@ with tab1:
   <div class="tzai-howto-grid">
     <div class="tzai-howto-item"><b>1. Choose your target schools</b>Select which institutions to check your course against using the dropdown.</div>
     <div class="tzai-howto-item"><b>2. Enter your course</b>Fill in the title and description (<span style="color:#f87171;">required</span>) — description significantly improves accuracy.</div>
-    <div class="tzai-howto-item"><b>3. Add dept &amp; number (optional)</b>Including your department code and course number improves the department-prior signal.</div>
+    <div class="tzai-howto-item"><b>3. Add dept &amp; level (optional)</b>Including your department code (e.g. MATH, CHEM) and course level (1–4) improves matching.</div>
     <div class="tzai-howto-item"><b>4. Read the verdict</b><span style="color:#4ade80;font-weight:600;">Green</span> = confirmed transfer &nbsp;·&nbsp; <span style="color:#fbbf24;font-weight:600;">Yellow</span> = likely, ask advisor &nbsp;·&nbsp; <span style="color:#71717a;">Gray</span> = low confidence</div>
   </div>
 </div>""", unsafe_allow_html=True)
@@ -527,17 +527,26 @@ with tab1:
             key="desc_input",
         )
 
+    _LEVEL_OPTIONS = {
+        "Not specified": 0,
+        "1 — Introductory (100-level)": 1,
+        "2 — Intermediate (200-level)": 2,
+        "3 — Upper Division (300-level)": 3,
+        "4 — Advanced / Graduate (400-level)": 4,
+    }
+
     with right_col:
         vccs_dept = st.text_input(
             "Department Code",
             value=st.session_state.example_dept,
-            placeholder="ACC, MTH, CSC… (optional)",
+            placeholder="MATH, CHEM, CSCI… (optional)",
         )
-        vccs_number = st.text_input(
-            "Course Number",
-            value=st.session_state.example_num,
-            placeholder="101, 211, 263… (optional)",
+        vccs_level_label = st.selectbox(
+            "Course Level",
+            options=list(_LEVEL_OPTIONS.keys()),
+            index=0,
         )
+        vccs_level = _LEVEL_OPTIONS[vccs_level_label]
         top_k = st.select_slider(
             "Results per institution",
             options=[3, 5, 7, 10], value=5,
@@ -562,7 +571,8 @@ with tab1:
                              '<div class="tzai-skel tzai-skel-sm"></div>'] * 2),
                     unsafe_allow_html=True)
                 results = predict_transfer(
-                    vccs_dept, vccs_number, vccs_title, vccs_desc,
+                    vccs_dept, "", vccs_title, vccs_desc,
+                    vccs_level=vccs_level,
                     institutions=selected, top_k=top_k,
                 )
                 skel.empty()
