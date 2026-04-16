@@ -794,3 +794,22 @@ FERPA compliant — no student PII.
 - Dept/number are soft signals — optional but improve results
 - Not a registrar decision — always confirm before acting
         """)
+
+    # ── Diagnostics (temporary) ──
+    with st.expander("🔧 System Diagnostics", expanded=True):
+        diag = artifacts.get("_diag", {})
+        if diag:
+            st.code(
+                f"BUILD: 2026-04-16-v2\n"
+                f"Python: {diag.get('python', '?')}\n"
+                f"XGBoost: {diag.get('xgboost', '?')}\n"
+                f"Classifier: {diag.get('classifier_type', '?')}\n"
+                f"n_estimators: {diag.get('n_estimators', '?')}\n"
+                f"num_features: {diag.get('num_features', '?')}\n"
+                f"feature_names: {diag.get('feature_names', '?')}\n"
+                f"artifacts_dir: {diag.get('artifacts_dir', '?')}\n"
+                f"institutions: {list(artifacts.get('institutions', {}).keys())}",
+                language="yaml",
+            )
+        else:
+            st.warning("No diagnostic info available")
