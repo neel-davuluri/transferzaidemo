@@ -369,8 +369,14 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
             continue
         inst = a["institutions"][inst_key]
 
-        # Use per-institution dept prior if available
-        dept_prior = a["dept_prior_map"].get(inst_key, {})
+        # Use per-institution dept prior if available; fall back to identity
+        # prior (dept → same dept: 1.0) for institutions not in training data
+        dept_prior = a["dept_prior_map"].get(inst_key)
+        if not dept_prior:
+            dept_prior = {
+                dept: {dept: 1.0}
+                for dept in set(inst["code_to_dept"].values())
+            }
 
         candidates = retrieve_candidates(
             vccs_text, vccs_dept, vccs_emb, inst, dept_prior, tfidf, k=RETRIEVAL_K
