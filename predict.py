@@ -168,8 +168,9 @@ def load_artifacts():
         a["scorecard"] = {}
 
     print("Loading fine-tuned BGE model...")
+    bge_path = str(Path(BGE_MODEL_PATH).resolve())
     a["bge_model"] = SentenceTransformer(
-        BGE_MODEL_PATH, device="cpu", token=os.environ.get("HF_TOKEN")
+        bge_path, device="cpu", token=os.environ.get("HF_TOKEN")
     )
     print("BGE model loaded.")
 
