@@ -266,9 +266,11 @@ def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
         diff       = abs(vccs_lvl - tgt_lvl)
         level_ratio = 1.0 - diff / 3.0
         same_level  = float(diff == 0)
+        num_ratio   = float(min(vccs_num, tgt_num)) / float(max(vccs_num, tgt_num)) if max(vccs_num, tgt_num) > 0 else 0.0
     else:
         level_ratio = 0.0
         same_level  = 0.0
+        num_ratio   = 0.0
 
     return {
         "bge_sim":         bge_sim,
@@ -279,6 +281,7 @@ def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
         "level_ratio":     level_ratio,
         "same_level":      same_level,
         "rrf_score":       rrf_score,
+        "num_ratio":       num_ratio,
         "bge_x_dept":      bge_sim * dept_prob,
         "bge_x_title":     bge_sim * title_sim,
         "bge_x_tfidf":     bge_sim * tfidf_sim,
