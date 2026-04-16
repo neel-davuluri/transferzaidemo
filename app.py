@@ -802,7 +802,7 @@ FERPA compliant — no student PII.
         diag = artifacts.get("_diag", {})
         if diag:
             st.code(
-                f"BUILD: 2026-04-16-v4\n"
+                f"BUILD: {_ARTIFACT_VERSION}\n"
                 f"Python: {diag.get('python', '?')}\n"
                 f"XGBoost: {diag.get('xgboost', '?')}\n"
                 f"Classifier: {diag.get('classifier_type', '?')}\n"
