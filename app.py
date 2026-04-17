@@ -320,18 +320,25 @@ tr:hover td { background: var(--surface-2) !important; }
 
 /* ── transcript result row ── */
 .tzai-tr {
-  display:flex; align-items:center; gap:0.75rem;
-  padding:0.6rem 0; border-bottom:1px solid var(--border);
+  padding:0.7rem 0; border-bottom:1px solid var(--border);
   font-size:0.83rem;
 }
 .tzai-tr:last-child { border-bottom:none; }
-.tzai-tr-src  { color:var(--text-1); font-weight:600; flex:1 1 200px; min-width:0; }
+.tzai-tr-main { display:flex; align-items:center; gap:0.75rem; }
+.tzai-tr-src  { color:var(--text-1); font-weight:600; flex:1 1 180px; min-width:0; }
 .tzai-tr-arr  { color:var(--text-4); flex-shrink:0; font-size:0.75rem; }
-.tzai-tr-tgt  { font-family:ui-monospace,monospace; font-size:0.8rem; color:var(--text-2); flex:0 0 110px; }
+.tzai-tr-tgt  { font-family:ui-monospace,monospace; font-size:0.8rem; color:var(--text-2); flex:0 0 88px; }
+.tzai-tr-tgt-title { font-size:0.8rem; color:var(--text-2); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .tzai-tr-pct  { font-weight:700; font-size:0.8rem; flex-shrink:0; min-width:36px; text-align:right; }
 .tzai-tr-pct.high { color:var(--green); }
 .tzai-tr-pct.mid  { color:var(--amber); }
 .tzai-tr-pct.low  { color:var(--text-4); }
+.tzai-tr-alts { display:flex; gap:0.5rem; margin-top:0.3rem; padding-left:0.1rem; flex-wrap:wrap; }
+.tzai-tr-alt {
+  font-size:0.71rem; color:var(--text-4);
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:9999px; padding:0.1em 0.55em;
+}
 
 /* ── banner ── */
 .tzai-banner {
@@ -386,7 +393,7 @@ tr:hover td { background: var(--surface-2) !important; }
 """, unsafe_allow_html=True)
 
 # ── Load ──────────────────────────────────────────────────────────────────────
-_ARTIFACT_VERSION = "2026-04-16-v10"  # bump to force cache invalidation
+_ARTIFACT_VERSION = "2026-04-16-v11"  # bump to force cache invalidation
 
 @st.cache_resource(show_spinner=False)
 def init(_version=_ARTIFACT_VERSION):
@@ -526,6 +533,7 @@ with tab1:
             height=110,
             key="desc_input",
         )
+        st.caption("⚠️ TransferzAI is not an official source. Always confirm transfer credit decisions with your school's registrar's office.")
 
     _LEVEL_OPTIONS = {
         "Not specified": 0,
@@ -595,7 +603,7 @@ with tab2:
   <div class="tzai-howto-head">How to use</div>
   <div class="tzai-howto-grid">
     <div class="tzai-howto-item"><b>1. Add your courses</b>Enter each course below. Title <span style="color:#f87171;">✦</span> and description <span style="color:#f87171;">✦</span> are required for accurate results.</div>
-    <div class="tzai-howto-item"><b>2. Choose target schools &amp; credits</b>Select institutions and set the minimum transfer credit threshold.</div>
+    <div class="tzai-howto-item"><b>2. Choose target schools &amp; credits</b>Select institutions and set the <b>minimum credits</b> threshold — the number of confirmed transfer credits needed to be considered eligible (typically 30 for transfer admission).</div>
     <div class="tzai-howto-item"><b>3. Evaluate</b>Click Evaluate Transcript to see a full breakdown of which courses transfer and your total confirmed credits.</div>
     <div class="tzai-howto-item"><b>4. Interpret results</b><span style="color:#4ade80;font-weight:600;">Green</span> = confirmed &nbsp;·&nbsp; <span style="color:#fbbf24;font-weight:600;">Yellow</span> = possible &nbsp;·&nbsp; <span style="color:#71717a;">Gray</span> = no match</div>
   </div>
@@ -658,6 +666,7 @@ with tab2:
                 course_inputs.append({"dept": dept, "number": num, "title": title,
                                        "description": desc, "credits": creds})
 
+    st.caption("⚠️ TransferzAI is not an official source. Always confirm transfer credit decisions with your school's registrar's office.")
     st.markdown("<br>", unsafe_allow_html=True)
     eval_clicked = st.button("Evaluate Transcript →", type="primary", key="eval")
 
@@ -699,12 +708,26 @@ with tab2:
                 for cr in r["course_results"]:
                     conf = cr["confidence"]; cls = _LABEL_CLS.get(cr.get("confidence_label", ""), "low")
                     src  = " ".join(filter(None,[cr["dept"],cr["number"],cr["title"]])).strip()
-                    tgt  = cr["best_match"] or "—"
+                    top  = cr.get("top_matches") or []
+                    best_code  = top[0]["code"]  if top else (cr["best_match"] or "—")
+                    best_title = top[0]["title"] if top else (cr.get("best_title") or "")
+                    # alternative pills (ranks 2 and 3)
+                    alts_html = ""
+                    if len(top) > 1:
+                        alt_parts = [
+                            f'<span class="tzai-tr-alt">{m["code"]} {m["title"][:30]}{"…" if len(m["title"]) > 30 else ""} · {m["confidence"]:.0%}</span>'
+                            for m in top[1:]
+                        ]
+                        alts_html = f'<div class="tzai-tr-alts">also: {"".join(alt_parts)}</div>'
                     rows_html += f"""<div class="tzai-tr">
-                      <span class="tzai-tr-src">{src}</span>
-                      <span class="tzai-tr-arr">→</span>
-                      <span class="tzai-tr-tgt">{tgt}</span>
-                      <span class="tzai-tr-pct {cls}">{conf:.0%}</span>
+                      <div class="tzai-tr-main">
+                        <span class="tzai-tr-src">{src}</span>
+                        <span class="tzai-tr-arr">→</span>
+                        <span class="tzai-tr-tgt">{best_code}</span>
+                        <span class="tzai-tr-tgt-title">{best_title}</span>
+                        <span class="tzai-tr-pct {cls}">{conf:.0%}</span>
+                      </div>
+                      {alts_html}
                     </div>"""
                 st.markdown(rows_html, unsafe_allow_html=True)
                 st.markdown("<br>", unsafe_allow_html=True)

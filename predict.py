@@ -471,12 +471,13 @@ def evaluate_transcript(courses, institutions=None,
             c["dept"], c["number"], c["title"],
             c.get("description", ""),
             institutions=institutions,
-            top_k=1,
+            top_k=3,
         )
         cr = c.get("credits", credit_hours_per_course)
 
         for inst_key in institutions:
-            best = (preds.get(inst_key) or [{}])[0]
+            top3 = preds.get(inst_key) or [{}]
+            best = top3[0]
             conf  = best.get("confidence", 0.0)
             label = best.get("confidence_label", "Low Confidence")
             inst_totals[inst_key]["total_credits"] += cr
@@ -494,6 +495,10 @@ def evaluate_transcript(courses, institutions=None,
                 "confidence":       conf,
                 "confidence_label": label,
                 "probability":      conf,
+                "top_matches": [
+                    {"code": m.get("code", ""), "title": m.get("title", ""), "confidence": m.get("confidence", 0.0)}
+                    for m in top3 if m.get("code")
+                ],
             })
 
     output = {}
