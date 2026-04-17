@@ -393,7 +393,7 @@ tr:hover td { background: var(--surface-2) !important; }
 """, unsafe_allow_html=True)
 
 # ── Load ──────────────────────────────────────────────────────────────────────
-_ARTIFACT_VERSION = "2026-04-16-v11"  # bump to force cache invalidation
+_ARTIFACT_VERSION = "2026-04-16-v12"  # bump to force cache invalidation
 
 @st.cache_resource(show_spinner=False)
 def init(_version=_ARTIFACT_VERSION):
@@ -472,6 +472,21 @@ st.markdown("""
     <span class="tzai-hero-name">TransferzAI</span>
   </div>
   <div class="tzai-hero-sub">AI-powered transfer credit evaluation across institutions</div>
+</div>
+<div style="
+  background:rgba(251,191,36,0.08);
+  border:1px solid rgba(251,191,36,0.35);
+  border-left:3px solid #fbbf24;
+  border-radius:8px;
+  padding:0.65rem 1rem;
+  margin-bottom:1.5rem;
+  font-size:0.82rem;
+  color:#d4d4d8;
+  line-height:1.5;
+">
+  <strong style="color:#fbbf24;">Not an official source.</strong>
+  TransferzAI results are AI-generated estimates and may be incorrect.
+  Always confirm transfer credit decisions with your school's registrar's office before acting on them.
 </div>""", unsafe_allow_html=True)
 
 tab1, tab2 = st.tabs(["Single Class Lookup", "Transcript Evaluator"])
@@ -533,8 +548,6 @@ with tab1:
             height=110,
             key="desc_input",
         )
-        st.caption("⚠️ TransferzAI is not an official source. Always confirm transfer credit decisions with your school's registrar's office.")
-
     _LEVEL_OPTIONS = {
         "Not specified": 0,
         "1 — Introductory (100-level)": 1,
@@ -666,7 +679,6 @@ with tab2:
                 course_inputs.append({"dept": dept, "number": num, "title": title,
                                        "description": desc, "credits": creds})
 
-    st.caption("⚠️ TransferzAI is not an official source. Always confirm transfer credit decisions with your school's registrar's office.")
     st.markdown("<br>", unsafe_allow_html=True)
     eval_clicked = st.button("Evaluate Transcript →", type="primary", key="eval")
 
