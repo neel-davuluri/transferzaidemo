@@ -1,257 +1,0 @@
-Loading models...
-Batches:   0%|          | 0/66 [00:00<?, ?it/s]Batches:   2%|▏         | 1/66 [00:01<01:31,  1.41s/it]Batches:   3%|▎         | 2/66 [00:01<00:57,  1.11it/s]Batches:   5%|▍         | 3/66 [00:02<00:45,  1.38it/s]Batches:   6%|▌         | 4/66 [00:02<00:38,  1.62it/s]Batches:   8%|▊         | 5/66 [00:03<00:35,  1.74it/s]Batches:   9%|▉         | 6/66 [00:03<00:30,  1.94it/s]Batches:  11%|█         | 7/66 [00:04<00:28,  2.08it/s]Batches:  12%|█▏        | 8/66 [00:04<00:26,  2.21it/s]Batches:  14%|█▎        | 9/66 [00:04<00:24,  2.34it/s]Batches:  15%|█▌        | 10/66 [00:05<00:22,  2.45it/s]Batches:  17%|█▋        | 11/66 [00:05<00:21,  2.60it/s]Batches:  18%|█▊        | 12/66 [00:06<00:19,  2.75it/s]Batches:  20%|█▉        | 13/66 [00:06<00:18,  2.84it/s]Batches:  21%|██        | 14/66 [00:06<00:17,  2.94it/s]Batches:  23%|██▎       | 15/66 [00:06<00:16,  3.09it/s]Batches:  24%|██▍       | 16/66 [00:07<00:15,  3.18it/s]Batches:  26%|██▌       | 17/66 [00:07<00:14,  3.29it/s]Batches:  27%|██▋       | 18/66 [00:07<00:14,  3.32it/s]Batches:  29%|██▉       | 19/66 [00:08<00:13,  3.48it/s]Batches:  30%|███       | 20/66 [00:08<00:12,  3.54it/s]Batches:  32%|███▏      | 21/66 [00:08<00:12,  3.55it/s]Batches:  33%|███▎      | 22/66 [00:08<00:12,  3.66it/s]Batches:  35%|███▍      | 23/66 [00:09<00:11,  3.86it/s]Batches:  36%|███▋      | 24/66 [00:09<00:10,  4.00it/s]Batches:  38%|███▊      | 25/66 [00:09<00:09,  4.13it/s]Batches:  39%|███▉      | 26/66 [00:09<00:09,  4.31it/s]Batches:  41%|████      | 27/66 [00:09<00:09,  4.24it/s]Batches:  42%|████▏     | 28/66 [00:10<00:08,  4.42it/s]Batches:  44%|████▍     | 29/66 [00:10<00:08,  4.57it/s]Batches:  45%|████▌     | 30/66 [00:10<00:08,  4.47it/s]Batches:  47%|████▋     | 31/66 [00:10<00:07,  4.49it/s]Batches:  48%|████▊     | 32/66 [00:11<00:07,  4.58it/s]Batches:  50%|█████     | 33/66 [00:11<00:07,  4.65it/s]Batches:  52%|█████▏    | 34/66 [00:11<00:06,  4.81it/s]Batches:  53%|█████▎    | 35/66 [00:11<00:06,  4.97it/s]Batches:  55%|█████▍    | 36/66 [00:11<00:06,  4.95it/s]Batches:  56%|█████▌    | 37/66 [00:12<00:06,  4.82it/s]Batches:  58%|█████▊    | 38/66 [00:12<00:05,  4.89it/s]Batches:  59%|█████▉    | 39/66 [00:12<00:05,  5.01it/s]Batches:  61%|██████    | 40/66 [00:12<00:05,  5.04it/s]Batches:  62%|██████▏   | 41/66 [00:12<00:05,  4.68it/s]Batches:  64%|██████▎   | 42/66 [00:13<00:05,  4.76it/s]Batches:  65%|██████▌   | 43/66 [00:13<00:04,  4.90it/s]Batches:  67%|██████▋   | 44/66 [00:13<00:04,  5.11it/s]Batches:  68%|██████▊   | 45/66 [00:13<00:04,  5.24it/s]Batches:  70%|██████▉   | 46/66 [00:13<00:03,  5.40it/s]Batches:  71%|███████   | 47/66 [00:13<00:03,  5.81it/s]Batches:  73%|███████▎  | 48/66 [00:14<00:02,  6.12it/s]Batches:  74%|███████▍  | 49/66 [00:14<00:02,  6.31it/s]Batches:  76%|███████▌  | 50/66 [00:14<00:02,  6.36it/s]Batches:  77%|███████▋  | 51/66 [00:14<00:02,  6.21it/s]Batches:  79%|███████▉  | 52/66 [00:14<00:02,  6.22it/s]Batches:  80%|████████  | 53/66 [00:14<00:02,  6.30it/s]Batches:  82%|████████▏ | 54/66 [00:15<00:01,  6.75it/s]Batches:  83%|████████▎ | 55/66 [00:15<00:01,  7.07it/s]Batches:  85%|████████▍ | 56/66 [00:15<00:01,  6.82it/s]Batches:  86%|████████▋ | 57/66 [00:15<00:01,  6.86it/s]Batches:  88%|████████▊ | 58/66 [00:15<00:01,  6.98it/s]Batches:  89%|████████▉ | 59/66 [00:15<00:00,  7.27it/s]Batches:  91%|█████████ | 60/66 [00:15<00:00,  7.45it/s]Batches:  92%|█████████▏| 61/66 [00:15<00:00,  7.98it/s]Batches:  95%|█████████▌| 63/66 [00:16<00:00,  9.17it/s]Batches:  98%|█████████▊| 65/66 [00:16<00:00, 10.69it/s]Batches: 100%|██████████| 66/66 [00:16<00:00,  4.05it/s]
-
-Total test queries: 181
-Errors (CE wrong):  108
-Printing first 30...
-
-================================================================================
-[01] RERANK MISS (correct at CE rank 2 in pool)
-     CCC:       BIOSC 130 Principles of Cellular and Molecular Biology
-     CCC desc:  this course covers universal biological processes of all organismal life with an emphasis on the cellular level of organization and is intended for biology majors or other students with an in depth in
-     PREDICTED: BIOL 20A — Cell and Molecular Biology
-                Introduction to biochemistry, cell biology, molecular biology, and genetics.
-     CORRECT:   BIOE 20B — Development and Physiology
-                Topics in morphology, physiology, development, genetics, and endocrinology selected to exemplify current issues and perspectives in organismic biology
-
-[02] RERANK MISS (correct at CE rank 2 in pool)
-     CCC:       MATH 48C Precalculus III
-     CCC desc:  this course is a continuation of topics from math b topics include the six trigonometric functions trigonometric identities inverse trigonometric functions trigonometric equations right triangles obli
-     PREDICTED: MATH 3 — Precalculus
-                Inverse functions and graphs; exponential and logarithmic functions, their graphs, and use in mathematical models of the real world; rates of change; 
-     CORRECT:   AM 3 — Precalculus for the Social Sciences
-                Introduces mathematical functions and their uses for modeling real-life problems in the social sciences. Includes inequalities, linear and quadratic e
-
-[03] RERANK MISS (correct at CE rank 2 in pool)
-     CCC:       MATH 1B Calculus
-     CCC desc:  this course examines the fundamentals of integral calculus faculty requirements course family not applicable course justification this course meets a general education requirement for de anza and cal 
-     PREDICTED: MATH 11B — Calculus with Applications
-                Starting with the fundamental theorem of calculus and related techniques, the integral of functions of a single variable is developed and applied to p
-     CORRECT:   MATH 19B — Calculus for Science, Engineering, and Mathematics
-                The definite integral and the fundamental theorem of calculus. Areas, volumes. Integration by parts, trigonometric substitution, and partial fractions
-
-[04] RERANK MISS (correct at CE rank 3 in pool)
-     CCC:       CHEM 1CH General Chemistry and Qualitative Analysis - HONORS
-     CCC desc:  this is the third and final quarter in the year long general chemistry sequence in this class advanced equilibrium concepts pertaining to solubility and buffers will be discussed this will be followed
-     PREDICTED: CHEM 3C — General Chemistry
-                The third course in UCSC’s three-quarter introductory chemistry series. Topics in this quarter include the first and second laws of thermodynamics, re
-     CORRECT:   CHEM 1A — General Chemistry
-                An integrated study of general chemistry. Covers a range of topics including the atomic structure of matter; molecules; chemical reactions; acids and 
-
-[05] RETRIEVAL MISS (correct not in top-50)
-     CCC:       MDIA 30 Digital Video Editing I
-     CCC desc:  basic instruction on the use of the computer for video and film editing theory and practice of cinematic editing which is explored through projects screenings class exercises and demonstration topics 
-     PREDICTED: FILM 170B — Fundamentals of Film and Video Production
-                An introduction to the art and craft of making films and videos. Covers principles of cinematography, videography, editing, production planning, and l
-     CORRECT:   FILM 20P — Introduction to Production Technique
-                Introduction to the production processes of visual/aural, time-based, creative work. Students work on a range of creative projects: performed, written
-
-[06] RERANK MISS (correct at CE rank 3 in pool)
-     CCC:       PHYS 230 Physics for Engineers and Scientists B: Heat and Electro-Magnetism
-     CCC desc:  this course is a continuation of phys and presents the study of thermodynamics electricity and magnetism topics include temperature heat the first and second laws of thermodynamics kinetic theory of g
-     PREDICTED: PHYS 6B — Introductory Physics II
-                A continuation of PHYS 6A . Geometric optics; statics and dynamics of fluids; introduction to thermodynamics, including temperature, heat, thermal con
-     CORRECT:   PHYS 6C — Introductory Physics III
-                Introduction to electricity and magnetism. Elementary circuits; Maxwell's equations; electromagnetic radiation; interference and polarization of light
-
-[07] POOL MISS (correct at RRF rank 11, outside top-10)
-     CCC:       ENGR 37L Circuit Analysis Laboratory
-     CCC desc:  practical verification of theorems and concepts learned in engr through experimentation included are experiments in dc and ac circuits involving the utilization of a variety of instruments such as dc 
-     PREDICTED: ECE 101 — Introduction to Electronic Circuits
-                Introduction to the physical basis and mathematical models of electrical components and circuits. Topics include circuit theorems (Thevenin and Norton
-     CORRECT:   ECE 101L — Introduction to Electronic Circuits Laboratory
-                Illustrates topics covered in ECE 101 . One two-hour laboratory session per week.
-
-[08] POOL MISS (correct at RRF rank 33, outside top-10)
-     CCC:       ICS 27 Grassroots Democracy: Leadership and Power
-     CCC desc:  this course provides both applied and theoretical training for students of social justice it serves as a multidisciplinary exploration of social change and popular democratic action with a specific fo
-     PREDICTED: MERR 33F — Transformative Leadership and Social Change
-                Examines current state of constant division and dissent to look for solutions to society's largest problems and examples of leadership that exhibit th
-     CORRECT:   CMMU 10 — Introduction to Community Activism
-                Surveys different strategies of community activism including charity, volunteering, labor and community organizing, and recently emerging global activ
-
-[09] RERANK MISS (correct at CE rank 4 in pool)
-     CCC:       PHYS 10 Conceptual Physics
-     CCC desc:  covers conceptual topics in physics for the non science major
-     PREDICTED: PHYS 1B — Physics for Everyone
-                Explores some of the great topics in classical and modern physics, including thermal physics, quantum mechanics, and the constituents of matter, and t
-     CORRECT:   PHYS 1A — Physics for Everyone
-                Explores some of the great topics in classical and modern physics, including relativity, and the connections to a broad range of inquiry, from daily l
-
-[10] POOL MISS (correct at RRF rank 13, outside top-10)
-     CCC:       POLI 9 Political Economy
-     CCC desc:  analysis of the contending theoretical formulations of international political economy ipe emphasizing the interconnection between economics and politics in the broad context of a global economy and t
-     PREDICTED: POLI 168 — Topics in International Relations and Global Politics
-                Examines contemporary issues in international relations, global politics, and global political economy through theoretical and applied frameworks, pro
-     CORRECT:   ENVS 25 — Environmental Politics, Economics and Justice
-                Introduces the policy and economic dimensions of some pressing environmental challenges. Case studies may include, biodiversity conservation, waste, w
-
-[11] RERANK MISS (correct at CE rank 6 in pool)
-     CCC:       CHEM 1B General Chemistry II
-     CCC desc:  covers general chemical principles including organic chemistry chemical kinetics equilibrium acid base chemistry thermochemistry thermodynamics electrochemistry structure properties of transition meta
-     PREDICTED: CHEM 1C — General Chemistry
-                An integrated study of general chemistry. Coverage includes thermodynamics; oxidation-reduction and electrochemistry; liquids and solids; intermolecul
-     CORRECT:   CHEM 3C — General Chemistry
-                The third course in UCSC’s three-quarter introductory chemistry series. Topics in this quarter include the first and second laws of thermodynamics, re
-
-[12] RERANK MISS (correct at CE rank 6 in pool)
-     CCC:       CHEM 12 General Chemistry II
-     CCC desc:  this course is a continuation of chem topics covered include kinetics equilibrium acid base chemistry precipitation reactions coordination chemistry thermodynamics electrochemistry and nuclear chemist
-     PREDICTED: CHEM 3B — General Chemistry
-                The second course in UCSC's three-quarter introductory chemistry series. Topics in this quarter include chemical equilibrium, acids and bases, solutio
-     CORRECT:   CHEM 4A — Advanced General Chemistry: Molecular Structure and Reactivity
-                The first course of the two-quarter accelerated general chemistry series intended for students with a strong high school chemistry background. Coverag
-
-[13] POOL MISS (correct at RRF rank 43, outside top-10)
-     CCC:       PHYSCS 21 Mechanics with Lab
-     CCC desc:  this course is a calculus based study of the mechanics of rigid bodies emphasizing newton s laws and its applications this course includes an introduction to fluids it is designed for engineering phys
-     PREDICTED: PHYS 6A — Introductory Physics I
-                Elementary mechanics. Vectors, Newton's laws, inverse square force laws, work and energy, conservation of momentum and energy, and oscillations.
-     CORRECT:   PHYS 5L — Introduction to Physics I Laboratory
-                Laboratory sequence illustrating topics covered in PHYS 5A and PHYS 15A . One three-hour laboratory session per week.
-
-[14] RERANK MISS (correct at CE rank 5 in pool)
-     CCC:       CHEM 1A General Chemistry
-     CCC desc:  fundamental chemical principles with an emphasis on physical and chemical properties stoichiometry chemical reaction types thermochemistry modern atomic theory and atomic structure chemical bonding an
-     PREDICTED: CHEM 3A — General Chemistry
-                The first course in UCSC's three-quarter introductory chemistry series. Topics in this quarter include atomic theory and structure, the periodic table
-     CORRECT:   CHEM 4B — Advanced General Chemistry: Molecular Structure and Reactivity
-                The second course of the two-quarter accelerated general chemistry series. Coverage includes thermodynamics; kinetics, oxidation-reduction, and electr
-
-[15] RERANK MISS (correct at CE rank 2 in pool)
-     CCC:       PSYCH 12 Introduction to Cognitive Psychology
-     CCC desc:  provides an advanced consideration of mental processes emphasizing perception memory problem solving decision making and the application of cognitive psychology to practical problems
-     PREDICTED: PSYC 1 — Introduction to Psychology
-                Introduces prospective majors to the scientific study of behavior and mental processes and also provides an overview for non-majors. Emphasizes social
-     CORRECT:   PSYC 20 — Cognition: Fundamental Theories
-                Introduces basic concepts in cognitive psychology with a focus on theoretical explanations of cognitive functioning. Topics include perception, attent
-
-[16] RERANK MISS (correct at CE rank 4 in pool)
-     CCC:       CHEM 1C General Chemistry and Qualitative Analysis
-     CCC desc:  this is the third and final quarter in the year long general chemistry sequence in this class advanced equilibrium concepts pertaining to solubility and buffers will be discussed this will be followed
-     PREDICTED: CHEM 3C — General Chemistry
-                The third course in UCSC’s three-quarter introductory chemistry series. Topics in this quarter include the first and second laws of thermodynamics, re
-     CORRECT:   CHEM 1A — General Chemistry
-                An integrated study of general chemistry. Covers a range of topics including the atomic structure of matter; molecules; chemical reactions; acids and 
-
-[17] RERANK MISS (correct at CE rank 3 in pool)
-     CCC:       PHYS 124 Calculus Supplement for Physics 120
-     CCC desc:  in this course students will apply calculus techniques to the physics topics learned in phys general college physics i
-     PREDICTED: PHYS 5L — Introduction to Physics I Laboratory
-                Laboratory sequence illustrating topics covered in PHYS 5A and PHYS 15A . One three-hour laboratory session per week.
-     CORRECT:   PHYS 6M — Introductory Physics II Laboratory
-                Laboratory sequence illustrating topics covered in PHYS 6B . One two-hour laboratory session per week.
-
-[18] POOL MISS (correct at RRF rank 17, outside top-10)
-     CCC:       MATH 10 Elementary Statistics
-     CCC desc:  presents concepts and applications of various topics in mathematics that use intermediate algebra skills core topics are set theory logic mathematical modeling including finance probability and statis
-     PREDICTED: PSYC 2 — Introduction to Psychological Statistics
-                An introduction to elementary statistical principles and techniques relevant to psychological research. Topics covered include basic parametric and no
-     CORRECT:   STAT 5 — Statistics
-                Introduction to statistical methods/reasoning, including descriptive methods, data-gathering (experimental design and sample surveys), probability, in
-
-[19] POOL MISS (correct at RRF rank 12, outside top-10)
-     CCC:       HIST 3C World History from 1750 CE to the Present
-     CCC desc:  this course covers the era from common era ce and extending to the present recent and current interactions between the world s peoples cultures and civilizations students will gain an interdisciplinar
-     PREDICTED: HIS 2A — The World to 1500
-                Surveys the rise of complex societies: the formation of classical civilizations in Afroeurasia and the Americas, post-classical empires and cross-cult
-     CORRECT:   HIS 2B — The World Since 1500
-                Examines major world issues over the past 500 years. Topics include European expansion and colonialism, the Muslim empires, East Asia from Ming to Qin
-
-[20] RERANK MISS (correct at CE rank 2 in pool)
-     CCC:       PHYS 4B Physics for Scientists and Engineers II
-     CCC desc:  covers electricity and magnetism for scientists and engineers this is the second course in the calculus based physics sequence students enrolled in the honors transfer program may count this course to
-     PREDICTED: PHYS 6C — Introductory Physics III
-                Introduction to electricity and magnetism. Elementary circuits; Maxwell's equations; electromagnetic radiation; interference and polarization of light
-     CORRECT:   PHYS 5C — Introduction to Physics III
-                Introduction to electricity and magnetism. Electromagnetic radiation, Maxwell's equations.
-
-[21] POOL MISS (correct at RRF rank 19, outside top-10)
-     CCC:       THTR 47A Introduction to Musical Theatre Production
-     CCC desc:  this course introduces the fundamentals of musical theatre performance through the rehearsal and performance of a fully staged musical theatre production students are required to attend rehearsals and
-     PREDICTED: THEA 50 — Fundamentals of Theater Production
-                Work is on various aspects of theatrical production, including scenery, lighting, costumes, sound, stage management, and video documentation. Satisfie
-     CORRECT:   THEA 20 — Introductory Studies in Acting
-                Introduction to basic acting skills and the problems of performance. Concentrates on expanding a range of expression and ability to respond to and ana
-
-[22] POOL MISS (correct at RRF rank 13, outside top-10)
-     CCC:       SPAN 2 Elementary Spanish II
-     CCC desc:  the advisory for this course is comparable to two years of high school spanish
-     PREDICTED: SPAN 5 — Second-Year Spanish
-                Includes comprehensive grammar review, composition, readings, and discussion. Reading and audiovisual material deal with various socio-political and c
-     CORRECT:   SPAN 1 — First-Year Spanish
-                The first-year program is aimed at developing proficiency in Spanish. Listening, speaking, reading, and writing are addressed through classroom practi
-
-[23] RERANK MISS (correct at CE rank 3 in pool)
-     CCC:       COMSC 165 Advanced Programming with C and C++
-     CCC desc:  the course emphasizes programming techniques using c and c languages the syntax of c is reviewed also covered are advanced topics such as string processing pointers links lists queues stacks and dynam
-     PREDICTED: CMPM 123 — Advanced Programming
-                Course introduces students to current and emerging advanced programming methods used in building complex, high-performance, and networked interactive 
-     CORRECT:   CSE 13S — Computer Systems and C Programming
-                Focuses on C programming, command line, shell programming, editors, debuggers, source code control, and other tools. Examines basic computer systems, 
-
-[24] RERANK MISS (correct at CE rank 4 in pool)
-     CCC:       SOCIO 124 Gender, Culture, and Society
-     CCC desc:  this course presents a multidimensional examination of gender in the united states and other societies including the mechanisms by which gender roles develop and the consequences for society the socia
-     PREDICTED: ANTH 131 — Gender in Cross-Cultural Context
-                Examines the diversity of women's as well as men's roles, experiences, and self-conceptions in a number of societies to explore how women and men shap
-     CORRECT:   FMST 1 — Feminist Studies: An Introduction
-                Introduces the core concepts underlying the interdisciplinary field-formation of feminist studies within multiple geopolitical contexts. Explores how 
-
-[25] POOL MISS (correct at RRF rank 12, outside top-10)
-     CCC:       CHEM 1AH General Chemistry - HONORS
-     CCC desc:  this course provides an introduction to the structure and reactivity of matter at the molecular level as well as an application of critical reasoning to modern chemical theory and structured numerical
-     PREDICTED: CHEM 4A — Advanced General Chemistry: Molecular Structure and Reactivity
-                The first course of the two-quarter accelerated general chemistry series intended for students with a strong high school chemistry background. Coverag
-     CORRECT:   CHEM 4BL — Advanced General Chemistry Lab
-                Focuses on science skills building with an emphasis on the general chemistry lab setting,. Provides an introduction to important concepts and practice
-
-[26] RERANK MISS (correct at CE rank 3 in pool)
-     CCC:       MATH 31 Precalculus I
-     CCC desc:  this course covers polynomial rational exponential and logarithmic functions graphs solving equations conic sections systems of equations and inequalities faculty requirements course family not applic
-     PREDICTED: AM 3 — Precalculus for the Social Sciences
-                Introduces mathematical functions and their uses for modeling real-life problems in the social sciences. Includes inequalities, linear and quadratic e
-     CORRECT:   MATH 3 — Precalculus
-                Inverse functions and graphs; exponential and logarithmic functions, their graphs, and use in mathematical models of the real world; rates of change; 
-
-[27] POOL MISS (correct at RRF rank 13, outside top-10)
-     CCC:       CHEM 1B General Chemistry
-     CCC desc:  this course is a continuation of an introduction to the principles of chemistry covering the investigations of intermolecular forces and their effects on chemical and physical properties also covered 
-     PREDICTED: CHEM 1C — General Chemistry
-                An integrated study of general chemistry. Coverage includes thermodynamics; oxidation-reduction and electrochemistry; liquids and solids; intermolecul
-     CORRECT:   CHEM 4AL — Advanced General Chemistry Lab
-                Focuses on science skills building with an emphasis on the general chemistry lab setting. Provides an introduction to important concepts and practices
-
-[28] RERANK MISS (correct at CE rank 3 in pool)
-     CCC:       CHEM 121 General College Chemistry II
-     CCC desc:  this course is the second semester of a two semester sequence chem and chem that covers gaseous and acid base equilibria buffers titration curves solubility products thermodynamics electrochemistry co
-     PREDICTED: CHEM 4A — Advanced General Chemistry: Molecular Structure and Reactivity
-                The first course of the two-quarter accelerated general chemistry series intended for students with a strong high school chemistry background. Coverag
-     CORRECT:   CHEM 3C — General Chemistry
-                The third course in UCSC’s three-quarter introductory chemistry series. Topics in this quarter include the first and second laws of thermodynamics, re
-
-[29] RERANK MISS (correct at CE rank 6 in pool)
-     CCC:       PHYS 125 Calculus Supplement for Physics 121
-     CCC desc:  in this course students will apply calculus techniques to the physics topics learned in phys general college physics ii
-     PREDICTED: PHYS 5L — Introduction to Physics I Laboratory
-                Laboratory sequence illustrating topics covered in PHYS 5A and PHYS 15A . One three-hour laboratory session per week.
-     CORRECT:   PHYS 6N — Introductory Physics III Laboratory
-                Laboratory sequence illustrating topics covered in PHYS 6C . One two-hour laboratory session per week.
-
-[30] POOL MISS (correct at RRF rank 14, outside top-10)
-     CCC:       CHEM 1A General Chemistry
-     CCC desc:  fundamental chemical principles with an emphasis on physical and chemical properties stoichiometry chemical reaction types thermochemistry modern atomic theory and atomic structure chemical bonding an
-     PREDICTED: CHEM 3A — General Chemistry
-                The first course in UCSC's three-quarter introductory chemistry series. Topics in this quarter include atomic theory and structure, the periodic table
-     CORRECT:   CHEM 4AL — Advanced General Chemistry Lab
-                Focuses on science skills building with an emphasis on the general chemistry lab setting. Provides an introduction to important concepts and practices
-
-================================================================================
-FAILURE TYPE BREAKDOWN
-================================================================================
-  Retrieval miss (not in top-50):             4 (4%)
-  Pool miss (top-50 but not top-10):        38 (35%)
-  Rerank miss (in pool, CE ranked it wrong):  66 (61%)
-
-Note: only rerank misses are fixable by improving the CE.
-      retrieval+pool misses require improving BGE or expanding pool size.

@@ -393,7 +393,7 @@ tr:hover td { background: var(--surface-2) !important; }
 """, unsafe_allow_html=True)
 
 # ── Load ──────────────────────────────────────────────────────────────────────
-_ARTIFACT_VERSION = "2026-04-16-v12"  # bump to force cache invalidation
+_ARTIFACT_VERSION = "2026-04-16-v13"  # bump to force cache invalidation
 
 @st.cache_resource(show_spinner=False)
 def init(_version=_ARTIFACT_VERSION):
@@ -585,7 +585,7 @@ with tab1:
         elif not selected:
             st.warning("Select at least one institution.")
         else:
-            with st.spinner(""):
+            with st.spinner("Searching…"):
                 skel = st.empty()
                 skel.markdown(
                     ''.join(['<div class="tzai-skel"></div>',
@@ -639,12 +639,18 @@ with tab2:
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown('<div class="tzai-lbl">Your courses <span style="color:var(--red);font-size:0.65rem;">✦ Title &amp; Description required per course</span></div>', unsafe_allow_html=True)
 
+    # (dept, number, title, description)
     DEFAULT_COURSES = [
-        ("ACC", "211", "PRINCIPLES OF ACCOUNTING I"),
-        ("ENG", "111", "COLLEGE COMPOSITION I"),
-        ("MTH", "263", "CALCULUS I"),
-        ("BIO", "101", "GENERAL BIOLOGY I"),
-        ("CSC", "221", "INTRODUCTION TO PROBLEM SOLVING AND PROGRAMMING"),
+        ("ACC", "211", "PRINCIPLES OF ACCOUNTING I",
+         "Introduces accounting principles with respect to financial reporting. Includes the accounting cycle, financial statements, and the conceptual framework of financial accounting."),
+        ("ENG", "111", "COLLEGE COMPOSITION I",
+         "Focuses on developing the student's ability to produce clear, effective prose. Covers expository writing, analytical reading, research, and documentation."),
+        ("MTH", "263", "CALCULUS I",
+         "Covers limits, derivatives, and integrals of single-variable functions. Topics include techniques of differentiation and integration and their applications."),
+        ("BIO", "101", "GENERAL BIOLOGY I",
+         "Introduces cellular and molecular biology. Topics include cell structure, metabolism, photosynthesis, cellular respiration, DNA replication, and cell division."),
+        ("CSC", "221", "INTRODUCTION TO PROBLEM SOLVING AND PROGRAMMING",
+         "Introduces structured and object-oriented programming using a modern language. Topics include data types, control flow, functions, arrays, and basic algorithms."),
     ]
     n = st.number_input("Number of courses", 1, 30, len(DEFAULT_COURSES), key="n_courses")
 
@@ -655,14 +661,14 @@ with tab2:
 
     course_inputs = []
     for i in range(int(n)):
-        defs  = DEFAULT_COURSES[i] if i < len(DEFAULT_COURSES) else ("", "", "")
+        defs  = DEFAULT_COURSES[i] if i < len(DEFAULT_COURSES) else ("", "", "", "")
         with st.container():
             row = st.columns([2, 1, 1, 1])
             with row[0]:
                 title = st.text_input(f"Title {i+1} ✦", value=defs[2], key=f"t_{i}",
                                       placeholder="Course title (required)",
                                       label_visibility="collapsed")
-                desc  = st.text_input(f"Desc {i+1} ✦", value="", key=f"x_{i}",
+                desc  = st.text_input(f"Desc {i+1} ✦", value=defs[3] if len(defs) > 3 else "", key=f"x_{i}",
                                       placeholder="Catalog description (required)",
                                       label_visibility="collapsed")
             with row[1]:

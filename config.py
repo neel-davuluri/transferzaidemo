@@ -28,6 +28,5 @@ MIN_CREDITS_REQUIRED = 30
 # Artifacts directory
 ARTIFACTS_DIR = "./artifacts"
 
-# Cross-encoder reranker
+# Cross-encoder reranker (training pipeline only — not used at inference)
 CROSS_ENCODER_PATH = "./cross_encoder"
-CROSS_ENCODER_RERANK_K = 10   # rerank top-K from LogReg with cross-encoder

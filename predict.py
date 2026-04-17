@@ -180,12 +180,6 @@ def load_artifacts():
         a["_diag"]["num_features"] = clf.get_booster().num_features()
         print(f"[DIAG] booster num_features: {clf.get_booster().num_features()}")
 
-    if (adir / "iso_cal.pkl").exists():
-        with open(adir / "iso_cal.pkl", "rb") as f:
-            a["iso_cal"] = pickle.load(f)
-    else:
-        a["iso_cal"] = None
-
     with open(adir / "tfidf.pkl", "rb") as f:
         a["tfidf"] = pickle.load(f)
 
@@ -423,11 +417,7 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
         conf = np.zeros(len(margins))
         for rank, idx in enumerate(top_idx[:n_soft]):
             conf[idx] = soft_vals[rank]
-        # candidates outside the top-K get a small residual (not displayed)
-        if n_soft < len(margins):
-            residual = (1.0 - soft_vals.sum()) / max(1, len(margins) - n_soft)
-            for idx in top_idx[n_soft:]:
-                conf[idx] = residual
+        # candidates outside top-K stay at 0 — below display cutoff
 
         inst_results = []
         for i, (cand_code, rrf_score, sigs) in enumerate(cand_info_list):
@@ -444,7 +434,6 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
                 "code":             cand_code,
                 "title":            info.get("title", ""),
                 "confidence":       c,
-                "probability":      c,
                 "confidence_label": conf_label,
                 "signals":          sigs,
             })
@@ -494,7 +483,6 @@ def evaluate_transcript(courses, institutions=None,
                 "best_title":       best.get("title"),
                 "confidence":       conf,
                 "confidence_label": label,
-                "probability":      conf,
                 "top_matches": [
                     {"code": m.get("code", ""), "title": m.get("title", ""), "confidence": m.get("confidence", 0.0)}
                     for m in top3 if m.get("code")
