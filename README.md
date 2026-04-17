@@ -137,4 +137,5 @@ transferzaidemo/
 
 ## Contact
 
-Neel Davuluri · Garrett Bellin
+Neel Davuluri (neel.davuluri@gmail.com)
+Garrett Bellin
