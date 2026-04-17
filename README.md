@@ -35,13 +35,12 @@ Thresholds τ are data-derived: the lowest confidence where precision ≥ 90% on
 
 Two-stage retrieve-then-rank pipeline, run per institution.
 
-**Stage 1 — RRF Retrieval** fuses three signals to find the top-50 candidates:
+**Stage 1 — RRF Retrieval** fuses two signals to find the top-50 candidates:
 
 | Signal | Role |
 |:---|:---|
 | Fine-tuned BGE bi-encoder | Semantic similarity (contrastive learning on transfer pairs) |
 | TF-IDF (1–2 gram, 15k features) | Lexical keyword overlap |
-| Dept name similarity (SequenceMatcher) | Structural boost for same-department candidates |
 
 **Stage 2 — XGBoost Reranker** scores each candidate on 13 features:
 
@@ -49,18 +48,26 @@ Two-stage retrieve-then-rank pipeline, run per institution.
 |:---|:---|
 | Semantic | BGE cosine similarity |
 | Lexical | TF-IDF (full text), TF-IDF (title only), SequenceMatcher title ratio |
-| Structural | Level ratio, same-level flag, dept name similarity, RRF score |
-| Interactions | BGE×dept, BGE×title, BGE×TF-IDF, dept×title, dept×level |
+| Structural | Level ratio, same-level flag, dept name similarity†, RRF score |
+| Interactions | BGE×dept†, BGE×title, BGE×TF-IDF, dept×title†, dept×level† |
 
-Per-query softmax over XGBoost margins gives calibrated confidence. Isotonic regression calibration post-hoc (Brier < 0.015, ECE < 0.011 across all institutions).
+† Dept features are zeroed out at inference (see below). The model uses 9 active features.
 
-### The key insight
+Per-query softmax over the top-5 XGBoost margins gives calibrated confidence. Restricting softmax to the top-5 candidates prevents dilution across the full 50-candidate pool.
+
+### Key insights
 
 **Semantic similarity ≠ transfer eligibility.**
 
 "Introduction to Chemistry" and "Organic Chemistry II" score highly similar in any embedding space — but they don't transfer. A cross-encoder reranker tested in development dropped top-3 recall from 45.5% to 28.1% by confidently promoting semantically similar but non-transferring courses.
 
-The fix: fine-tune the retriever on transfer pairs using contrastive learning, so it learns the "transfers as" relationship rather than generic similarity. Then use structural features (level, department, title match) in the reranker — not more semantic power.
+The fix: fine-tune the retriever on transfer pairs using contrastive learning, so it learns the "transfers as" relationship rather than generic similarity. Then use structural features (level, title match) in the reranker — not more semantic power.
+
+**Dept codes cause training/inference distribution mismatch.**
+
+Training data pairs VCCS source dept codes (ACC, MTH, CSC) against target institution codes (BUAD, MATH, CSCI). Accounting positives always had `dept_sim ≈ 0` during training because "ACC" never string-matches "BUAD". If a user provides their dept code at inference (BUAD vs BUAD → `dept_sim = 1.0`), XGBoost sees a feature combination it never encountered for accounting queries and produces incorrect negative margins.
+
+The fix: dept features are computed for display in the UI but zeroed out before being fed to XGBoost, restoring in-distribution behavior. The model relies on semantic and lexical features for subject-area matching — which it was actually trained on.
 
 ---
 
@@ -93,9 +100,9 @@ from predict import predict_transfer
 
 results = predict_transfer(
     vccs_dept="MTH",
-    vccs_number="263",
     vccs_title="Calculus I",
     vccs_desc="Limits, derivatives, and integrals of single-variable functions...",
+    vccs_level=1,   # 1=introductory, 2=intermediate, 3=upper, 4=advanced
 )
 
 for inst, matches in results.items():
@@ -113,12 +120,13 @@ transferzaidemo/
 ├── app.py                    # Streamlit demo (Single Class Lookup + Transcript Evaluator)
 ├── predict.py                # Inference: predict_transfer(), evaluate_transcript()
 ├── config.py                 # Hyperparameters (thresholds, retrieval K, model paths)
-├── paths.py                  # Data file paths
+├── paths.py                  # Data file paths (used by pipeline and eval scripts)
 ├── download_artifacts.py     # Pull pre-trained artifacts from HuggingFace Hub
 ├── scripts/
-│   └── build_artifacts.py    # Full retrain: BGE embeddings + XGBoost + calibration
+│   ├── build_artifacts.py    # Full retrain: BGE embeddings + XGBoost + artifacts
+│   └── ...                   # Catalog/dataset builders
 ├── pipeline/                 # Step-by-step training modules (split, negatives, finetune, eval)
-├── eval/                     # Sequence feature helpers
+├── eval/                     # Evaluation scripts and metric reporting
 └── data/
     ├── catalogs/             # Institution course catalogs (W&M, VT, UCSC)
     └── equivalency/          # Ground-truth transfer equivalency tables
@@ -130,7 +138,8 @@ transferzaidemo/
 
 - **Coverage is intentionally low.** At the high-confidence threshold, the system abstains on ~75% of queries. This is by design — better to say "check with an advisor" than predict incorrectly.
 - **Top-1 recall is moderate.** The correct course is the top prediction ~50% of the time, top-3 ~65–83%. The reranker improves precision over pure retrieval; the tradeoff is some recall loss.
-- **Dept and course number are optional soft signals.** They improve results but the system works without them.
+- **Dept code is display-only.** Due to training/inference distribution mismatch, dept features are zeroed out before the model scores candidates. Department is shown in the signal breakdown for context but does not affect rankings.
+- **Course level is an optional soft signal.** Providing a level (1–4) improves level-matching across different numbering schemes (100-level vs 1000-level). The system works without it.
 - **Not a registrar decision.** Always confirm with the institution before acting on these results.
 
 ---
