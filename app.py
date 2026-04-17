@@ -386,7 +386,7 @@ tr:hover td { background: var(--surface-2) !important; }
 """, unsafe_allow_html=True)
 
 # ── Load ──────────────────────────────────────────────────────────────────────
-_ARTIFACT_VERSION = "2026-04-16-v9"  # bump to force cache invalidation
+_ARTIFACT_VERSION = "2026-04-16-v10"  # bump to force cache invalidation
 
 @st.cache_resource(show_spinner=False)
 def init(_version=_ARTIFACT_VERSION):
@@ -445,7 +445,7 @@ def render_results(results, selected):
             a, b, c, d = st.columns(4)
             a.metric("Semantic",   f"{sigs['bge_sim']:.3f}")
             b.metric("Lexical",    f"{sigs['tfidf_sim']:.3f}")
-            c.metric("Dept Match", f"{sigs.get('dept_sim', sigs.get('dept_prob', 0.0)):.3f}")
+            c.metric("Dept Match", f"{sigs.get('dept_sim_display', sigs.get('dept_sim', 0.0)):.3f}")
             d.metric("Title",      f"{sigs['title_sim']:.3f}")
         if len(rows) > 1:
             sub = "".join(f"""

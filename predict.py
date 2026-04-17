@@ -269,8 +269,17 @@ def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
     tfidf_sim = float(cosine_similarity(vecs[0:1], vecs[1:2])[0, 0])
 
     cand_dept = code_to_dept.get(cand_code, "UNK")
-    dept_sim  = SequenceMatcher(None, vccs_dept.lower(), cand_dept.lower()).ratio() \
-                if vccs_dept else 0.0
+    # dept_sim_display: actual dept similarity for UI signal breakdown
+    dept_sim_display = SequenceMatcher(None, vccs_dept.lower(), cand_dept.lower()).ratio() \
+                       if vccs_dept else 0.0
+    # dept_sim fed to XGBoost is always 0.0.
+    # Reason: training data used VCCS source dept codes (ACC, MTH, CSC) vs target codes
+    # (BUAD, MATH, CSCI). Accounting positives had dept_sim≈0 throughout training
+    # because ACC never string-matched BUAD. At inference, user-provided dept=BUAD
+    # vs target BUAD gives dept_sim=1.0, completely out-of-distribution — causing
+    # XGBoost to apply negative/incorrect feature weights for all dept interactions.
+    # Zeroing restores in-distribution behavior: model relies on semantic/lexical features.
+    dept_sim = 0.0
 
     cand_title = lookup.get(cand_code, {}).get("title", "")
     title_sim  = SequenceMatcher(None, clean_text(vccs_title), clean_text(cand_title)).ratio()
@@ -301,19 +310,20 @@ def extract_signals(vccs_emb, vccs_text, vccs_dept, vccs_number, vccs_title,
         same_level  = 0.0
 
     return {
-        "bge_sim":         bge_sim,
-        "tfidf_sim":       tfidf_sim,
-        "tfidf_title_sim": tfidf_title_sim,
-        "dept_sim":        dept_sim,
-        "title_sim":       title_sim,
-        "level_ratio":     level_ratio,
-        "same_level":      same_level,
-        "rrf_score":       rrf_score,
-        "bge_x_dept":      bge_sim * dept_sim,
-        "bge_x_title":     bge_sim * title_sim,
-        "bge_x_tfidf":     bge_sim * tfidf_sim,
-        "dept_x_title":    dept_sim * title_sim,
-        "dept_x_level":    dept_sim * level_ratio,
+        "bge_sim":          bge_sim,
+        "tfidf_sim":        tfidf_sim,
+        "tfidf_title_sim":  tfidf_title_sim,
+        "dept_sim":         dept_sim,          # always 0.0 — kept at 0 to stay in-distribution
+        "dept_sim_display": dept_sim_display,  # actual value for UI only
+        "title_sim":        title_sim,
+        "level_ratio":      level_ratio,
+        "same_level":       same_level,
+        "rrf_score":        rrf_score,
+        "bge_x_dept":       bge_sim * dept_sim,
+        "bge_x_title":      bge_sim * title_sim,
+        "bge_x_tfidf":      bge_sim * tfidf_sim,
+        "dept_x_title":     dept_sim * title_sim,
+        "dept_x_level":     dept_sim * level_ratio,
     }
 
 
