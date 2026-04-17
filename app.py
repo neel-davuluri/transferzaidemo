@@ -393,7 +393,7 @@ tr:hover td { background: var(--surface-2) !important; }
 """, unsafe_allow_html=True)
 
 # ── Load ──────────────────────────────────────────────────────────────────────
-_ARTIFACT_VERSION = "2026-04-16-v13"  # bump to force cache invalidation
+_ARTIFACT_VERSION = "2026-04-16-v14"  # bump to force cache invalidation
 
 @st.cache_resource(show_spinner=False)
 def init(_version=_ARTIFACT_VERSION):
@@ -635,6 +635,7 @@ with tab2:
                        if lbl in sel_t2]
     with top_row[1]:
         min_credits = st.number_input("Min credits", value=MIN_CREDITS_REQUIRED, min_value=1, max_value=120)
+        st.caption("Minimum confirmed transfer credits to be considered eligible. Most 4-year schools require 30–60 credits for junior standing.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown('<div class="tzai-lbl">Your courses <span style="color:var(--red);font-size:0.65rem;">✦ Title &amp; Description required per course</span></div>', unsafe_allow_html=True)
