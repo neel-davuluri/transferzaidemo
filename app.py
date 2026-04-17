@@ -591,13 +591,17 @@ with tab1:
                     ''.join(['<div class="tzai-skel"></div>',
                              '<div class="tzai-skel tzai-skel-sm"></div>'] * 2),
                     unsafe_allow_html=True)
-                results = predict_transfer(
-                    vccs_dept, "", vccs_title, vccs_desc,
-                    vccs_level=vccs_level,
-                    institutions=selected, top_k=top_k,
-                )
-                skel.empty()
-            render_results(results, selected)
+                try:
+                    results = predict_transfer(
+                        vccs_dept, "", vccs_title[:200], vccs_desc[:2000],
+                        vccs_level=vccs_level,
+                        institutions=selected, top_k=top_k,
+                    )
+                    skel.empty()
+                    render_results(results, selected)
+                except Exception as e:
+                    skel.empty()
+                    st.error(f"Search failed: {e}")
     else:
         st.markdown("""
         <div class="tzai-empty">
@@ -701,8 +705,15 @@ with tab2:
             st.warning("Select at least one institution.")
         else:
             with st.spinner(f"Evaluating {len(course_inputs)} courses…"):
-                results = evaluate_transcript(course_inputs, institutions=sel_t2_keys,
-                                              min_credits_required=min_credits)
+                try:
+                    for ci in course_inputs:
+                        ci["title"]       = ci["title"][:200]
+                        ci["description"] = ci["description"][:2000]
+                    results = evaluate_transcript(course_inputs, institutions=sel_t2_keys,
+                                                  min_credits_required=min_credits)
+                except Exception as e:
+                    st.error(f"Evaluation failed: {e}")
+                    results = {}
             for inst_key in sel_t2_keys:
                 r = results.get(inst_key)
                 if not r: continue
