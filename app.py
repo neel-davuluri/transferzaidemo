@@ -357,7 +357,7 @@ with top_row[0]:
     sel_t2 = st.multiselect(
         "Target institutions",
         options=[f"{INST_LOGOS.get(k,'🏫')}  {INSTS[k]}" for k in INSTS],
-        default=[f"{INST_LOGOS.get(k,'🏫')}  {INSTS[k]}" for k in INSTS],
+        default=[f"{INST_LOGOS.get('wm','🏫')}  {INSTS['wm']}"],
         key="t2_inst",
     )
     sel_t2_keys = [list(INSTS.keys())[i]
@@ -430,6 +430,7 @@ if eval_clicked:
     elif not sel_t2_keys:
         st.warning("Select at least one institution.")
     else:
+        results = {}
         with st.spinner(f"Evaluating {len(course_inputs)} courses…"):
             try:
                 for ci in course_inputs:
