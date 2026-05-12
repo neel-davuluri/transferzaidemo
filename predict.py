@@ -121,13 +121,28 @@ def _load_institution(key, a, adir):
 
 
 def _resolve_artifacts_dir():
-    """Return a Path to the artifacts directory, downloading from HF Hub if needed."""
+    """Return a Path to the artifacts directory, downloading from S3 or HF Hub if needed."""
     local = Path(ARTIFACTS_DIR)
-    # On Streamlit Cloud (HF_TOKEN set), always sync from HF Hub into ./artifacts
-    # to ensure we pick up new artifacts after retraining.
-    # Locally, just use the existing directory.
-    if local.exists() and not os.environ.get("HF_TOKEN"):
+    if local.exists() and not os.environ.get("HF_TOKEN") and not os.environ.get("AWS_ACCESS_KEY_ID"):
         return local
+
+    # S3 takes priority over HuggingFace when AWS credentials are present
+    if os.environ.get("AWS_ACCESS_KEY_ID"):
+        import boto3
+        bucket = os.environ.get("S3_BUCKET", "transferzai-artifacts")
+        s3 = boto3.client("s3")
+        local.mkdir(exist_ok=True)
+        print(f"Downloading artifacts from s3://{bucket}/artifacts/ ...")
+        paginator = s3.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=bucket, Prefix="artifacts/"):
+            for obj in page.get("Contents", []):
+                filename = obj["Key"].split("/")[-1]
+                if filename:
+                    dest = local / filename
+                    s3.download_file(bucket, obj["Key"], str(dest))
+                    print(f"  downloaded {filename}")
+        return local
+
     from huggingface_hub import snapshot_download
     print(f"Downloading artifacts from {ARTIFACTS_HF_REPO} ...")
     snapshot_download(

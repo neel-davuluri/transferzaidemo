@@ -29,6 +29,7 @@ from pathlib import Path
 from collections import defaultdict, Counter
 from difflib import SequenceMatcher
 from scipy.special import softmax as scipy_softmax
+import mlflow
 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -417,39 +418,8 @@ y_train = np.array(wm_l  + vt_l  + ccc_l,  dtype=int)
 print(f"\nTotal training candidates: {len(X_train)}  positives: {y_train.sum()}")
 
 
-# ── train XGBoost ──────────────────────────────────────────────────────────────
 
-print("\n--- Training XGBoost ---")
-pos_rate = y_train.sum() / len(y_train)
-scale_pw = (1 - pos_rate) / pos_rate
-
-xgb_model = xgb.XGBClassifier(
-    n_estimators=500,
-    max_depth=4,
-    learning_rate=0.05,
-    subsample=0.8,
-    colsample_bytree=0.8,
-    min_child_weight=5,
-    gamma=1.0,
-    scale_pos_weight=scale_pw,
-    tree_method="hist",
-    device="cpu",
-    eval_metric="logloss",
-    random_state=42,
-    verbosity=0,
-)
-xgb_model.fit(X_train, y_train)
-
-# Fit calibrator using sigmoid(margins) — avoids predict_proba segfault w/ PyTorch
-dmat_tr   = xgb.DMatrix(X_train)
-margins_tr = xgb_model.get_booster().predict(dmat_tr, output_margin=True)
-raw_probs_tr = 1.0 / (1.0 + np.exp(-margins_tr))
-iso_cal = IsotonicRegression(out_of_bounds="clip")
-iso_cal.fit(raw_probs_tr, y_train)
-print("  XGBoost trained. Calibrator fitted.")
-
-
-# ── quick eval helper ──────────────────────────────────────────────────────────
+# ── eval helpers ───────────────────────────────────────────────────────────────
 
 def compute_ece(y_true, y_prob, n_bins=10):
     edges = np.linspace(0, 1, n_bins + 1)
@@ -512,7 +482,6 @@ def quick_eval(test_df, get_query, get_target, get_dept_num, query_inst, cat, la
     top1_lr_r  = t1_lr  / n
     top3_lr_r  = t3_lr  / n
 
-    # threshold sweep
     confs  = np.array([x[0] for x in query_confs])
     labels = np.array([x[1] for x in query_confs])
     thresholds = np.arange(0.05, 0.96, 0.05)
@@ -528,7 +497,7 @@ def quick_eval(test_df, get_query, get_target, get_dept_num, query_inst, cat, la
     for tau, prec, recall, coverage in sweep:
         if prec >= 0.90 and coverage > 0:
             op_tau = tau; op_prec = prec; op_rec = recall; op_cov = coverage
-            break  # take the LOWEST tau that achieves >= 90% precision
+            break
 
     print(f"\n  {label}  (n={n})")
     print(f"    Top-1 RRF={top1_rrf_r:.3f}  Top-1 XGB={top1_lr_r:.3f}  Top-3={top3_lr_r:.3f}")
@@ -543,57 +512,125 @@ def quick_eval(test_df, get_query, get_target, get_dept_num, query_inst, cat, la
         "sweep": sweep,
     }
 
-print("\n--- Evaluating (test sets) ---")
-sc_wm   = quick_eval(wm_test,  vccs_query, wm_target,  wm_dept_num,  "vccs",     wm_cat,   "W&M")
-sc_vt   = quick_eval(vt_test,  vccs_query, vt_target,  wm_dept_num,  "vccs",     vt_cat,   "VT")
-sc_ucsc = quick_eval(ccc_test, ccc_query,  ccc_target, ccc_dept_num, "ucsc_ccc", ucsc_cat, "CCC→UCSC")
 
-scorecard = {
-    "wm":   sc_wm,
-    "vt":   sc_vt,
-    "ucsc": sc_ucsc,
-    "feature_names": FEATURE_NAMES,
-    "model_version": "xgboost-v1",
-}
+# ── train + eval + save (single MLflow run) ───────────────────────────────────
 
+print("\n--- Training XGBoost ---")
+pos_rate = y_train.sum() / len(y_train)
+scale_pw = (1 - pos_rate) / pos_rate
 
-# ── save artifacts ─────────────────────────────────────────────────────────────
+mlflow.set_experiment("transferzai-reranker")
 
-print("\n--- Saving artifacts ---")
+with mlflow.start_run():
+    mlflow.log_params({
+        "n_estimators":     500,
+        "max_depth":        4,
+        "learning_rate":    0.05,
+        "subsample":        0.8,
+        "colsample_bytree": 0.8,
+        "min_child_weight": 5,
+        "gamma":            1.0,
+        "retrieval_k":      RERANK_K,
+        "rrf_k":            RRF_K,
+        "tfidf_features":   15000,
+    })
 
-with open(ARTIFACTS / "classifier.pkl", "wb") as f:
-    pickle.dump(xgb_model, f)
-print("  classifier.pkl")
+    xgb_model = xgb.XGBClassifier(
+        n_estimators=500,
+        max_depth=4,
+        learning_rate=0.05,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        min_child_weight=5,
+        gamma=1.0,
+        scale_pos_weight=scale_pw,
+        tree_method="hist",
+        device="cpu",
+        eval_metric="logloss",
+        random_state=42,
+        verbosity=0,
+    )
+    xgb_model.fit(X_train, y_train)
 
-with open(ARTIFACTS / "iso_cal.pkl", "wb") as f:
-    pickle.dump(iso_cal, f)
-print("  iso_cal.pkl")
+    dmat_tr      = xgb.DMatrix(X_train)
+    margins_tr   = xgb_model.get_booster().predict(dmat_tr, output_margin=True)
+    raw_probs_tr = 1.0 / (1.0 + np.exp(-margins_tr))
+    iso_cal = IsotonicRegression(out_of_bounds="clip")
+    iso_cal.fit(raw_probs_tr, y_train)
+    print("  XGBoost trained. Calibrator fitted.")
 
-with open(ARTIFACTS / "tfidf.pkl", "wb") as f:
-    pickle.dump(tfidf, f)
-print("  tfidf.pkl")
+    print("\n--- Evaluating (test sets) ---")
+    sc_wm   = quick_eval(wm_test,  vccs_query, wm_target,  wm_dept_num,  "vccs",     wm_cat,   "W&M")
+    sc_vt   = quick_eval(vt_test,  vccs_query, vt_target,  wm_dept_num,  "vccs",     vt_cat,   "VT")
+    sc_ucsc = quick_eval(ccc_test, ccc_query,  ccc_target, ccc_dept_num, "ucsc_ccc", ucsc_cat, "CCC→UCSC")
 
-# dept_prior_map.pkl no longer needed — dept_sim replaces the lookup table
+    for sc in [sc_wm, sc_vt, sc_ucsc]:
+        prefix = sc["label"].lower().replace("→", "_").replace("&", "").replace(" ", "_")
+        mlflow.log_metrics({
+            f"{prefix}_top1":          sc["top1_lr"],
+            f"{prefix}_top3":          sc["top3_lr"],
+            f"{prefix}_precision_tau": sc["precision_tau"],
+            f"{prefix}_coverage_tau":  sc["coverage_tau"],
+            f"{prefix}_brier":         sc["brier"],
+            f"{prefix}_ece":           sc["ece"],
+            f"{prefix}_op_tau":        sc["op_tau"],
+        })
 
-with open(ARTIFACTS / "feature_names.pkl", "wb") as f:
-    pickle.dump(FEATURE_NAMES, f)
-print("  feature_names.pkl")
+    from mlflow.xgboost import log_model as mlflow_log_xgb
+    mlflow_log_xgb(xgb_model, "xgboost_reranker")
 
-with open(ARTIFACTS / "scorecard.pkl", "wb") as f:
-    pickle.dump(scorecard, f)
-print("  scorecard.pkl")
+    scorecard = {
+        "wm":   sc_wm,
+        "vt":   sc_vt,
+        "ucsc": sc_ucsc,
+        "feature_names": FEATURE_NAMES,
+        "model_version": "xgboost-v1",
+    }
 
-# Per-institution catalogs
-for key, cat_data in [("wm", wm_cat), ("vt", vt_cat), ("ucsc", ucsc_cat)]:
-    with open(ARTIFACTS / f"{key}_codes.pkl", "wb") as f:
-        pickle.dump(cat_data["codes"], f)
-    with open(ARTIFACTS / f"{key}_lookup.pkl", "wb") as f:
-        pickle.dump(cat_data["lk"], f)
-    np.save(ARTIFACTS / f"{key}_embeddings.npy", cat_data["embs"])
-    print(f"  {key}_codes.pkl / {key}_lookup.pkl / {key}_embeddings.npy")
+    print("\n--- Saving artifacts ---")
 
-print("\nDone. All artifacts saved to artifacts/")
-print(f"\nSummary:")
-for sc in [sc_wm, sc_vt, sc_ucsc]:
-    print(f"  {sc['label']:<12} Top-1={sc['top1_lr']:.3f}  Top-3={sc['top3_lr']:.3f}  "
-          f"Prec@τ={sc['precision_tau']:.3f}  Cov@τ={sc['coverage_tau']:.3f}")
+    with open(ARTIFACTS / "classifier.pkl", "wb") as f:
+        pickle.dump(xgb_model, f)
+    print("  classifier.pkl")
+
+    with open(ARTIFACTS / "iso_cal.pkl", "wb") as f:
+        pickle.dump(iso_cal, f)
+    print("  iso_cal.pkl")
+
+    with open(ARTIFACTS / "tfidf.pkl", "wb") as f:
+        pickle.dump(tfidf, f)
+    print("  tfidf.pkl")
+
+    with open(ARTIFACTS / "feature_names.pkl", "wb") as f:
+        pickle.dump(FEATURE_NAMES, f)
+    print("  feature_names.pkl")
+
+    with open(ARTIFACTS / "scorecard.pkl", "wb") as f:
+        pickle.dump(scorecard, f)
+    print("  scorecard.pkl")
+
+    for key, cat_data in [("wm", wm_cat), ("vt", vt_cat), ("ucsc", ucsc_cat)]:
+        with open(ARTIFACTS / f"{key}_codes.pkl", "wb") as f:
+            pickle.dump(cat_data["codes"], f)
+        with open(ARTIFACTS / f"{key}_lookup.pkl", "wb") as f:
+            pickle.dump(cat_data["lk"], f)
+        np.save(ARTIFACTS / f"{key}_embeddings.npy", cat_data["embs"])
+        print(f"  {key}_codes.pkl / {key}_lookup.pkl / {key}_embeddings.npy")
+
+    print("\nDone. All artifacts saved to artifacts/")
+    print(f"\nSummary:")
+    for sc in [sc_wm, sc_vt, sc_ucsc]:
+        print(f"  {sc['label']:<12} Top-1={sc['top1_lr']:.3f}  Top-3={sc['top3_lr']:.3f}  "
+              f"Prec@τ={sc['precision_tau']:.3f}  Cov@τ={sc['coverage_tau']:.3f}")
+
+    # ── Upload artifacts to S3 ─────────────────────────────────────────────────
+    import boto3, os
+    bucket = os.environ.get("S3_BUCKET", "transferzai-artifacts")
+    s3 = boto3.client("s3")
+    print(f"\n--- Uploading artifacts to s3://{bucket}/artifacts/ ---")
+    for path in sorted(ARTIFACTS.iterdir()):
+        if path.suffix in {".pkl", ".npy"}:
+            key = f"artifacts/{path.name}"
+            s3.upload_file(str(path), bucket, key)
+            print(f"  uploaded {key}")
+    print("S3 upload complete.")
