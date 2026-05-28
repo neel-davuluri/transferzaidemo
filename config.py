@@ -7,7 +7,7 @@ ARTIFACTS_HF_REPO    = "hyperalpha/transferzai-artifacts"
 QUERY_PREFIX = "Represent this course for finding transfer equivalents: "
 
 # Retrieval
-RETRIEVAL_K = 50
+RETRIEVAL_K = 100
 RRF_K = 60
 DEPT_WEIGHT = 0.5
 TOP_K_DISPLAY = 5
@@ -19,7 +19,7 @@ HIGH_CONFIDENCE_THRESHOLD = 0.65
 TRANSFER_THRESHOLD = 0.35
 
 # Internal K used for softmax normalization (independent of display top_k)
-SOFTMAX_K = 5
+SOFTMAX_K = 10
 
 # Transcript evaluation
 DEFAULT_CREDITS_PER_COURSE = 3

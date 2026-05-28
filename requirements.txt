@@ -10,3 +10,5 @@ scipy>=1.11.0
 streamlit>=1.30.0
 pyarrow>=17.0.0
 accelerate>=0.26.0
+boto3>=1.43.0
+mlflow>=3.0.0

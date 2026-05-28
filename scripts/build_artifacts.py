@@ -58,7 +58,7 @@ print(f"Device: {device}")
 
 QUERY_PREFIX = "Represent this course for finding transfer equivalents: "
 RRF_K    = 60
-RERANK_K = 50
+RERANK_K = 100
 
 FEATURE_NAMES = [
     "bge_sim", "tfidf_sim", "tfidf_title_sim",
