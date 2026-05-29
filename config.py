@@ -15,8 +15,8 @@ TOP_K_DISPLAY = 5
 # Thresholds — softmax confidence over top-K displayed candidates (not all 50).
 # Softmax over K=5 means a winner with margin-gap=3 above competitors shows 85%.
 # A gap=1 (uncertain) shows 55%. Calibrated thresholds for K≈5:
-HIGH_CONFIDENCE_THRESHOLD = 0.65
-TRANSFER_THRESHOLD = 0.35
+HIGH_CONFIDENCE_THRESHOLD = 0.84   # confirmed transfer
+TRANSFER_THRESHOLD = 0.74          # possible transfer
 
 # Internal K used for softmax normalization (independent of display top_k)
 SOFTMAX_K = 10

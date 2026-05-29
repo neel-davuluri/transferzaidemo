@@ -364,8 +364,8 @@ with top_row[0]:
                    for i, lbl in enumerate([f"{INST_LOGOS.get(k,'🏫')}  {INSTS[k]}" for k in INSTS])
                    if lbl in sel_t2]
 with top_row[1]:
-    min_credits = st.number_input("Min credits", value=MIN_CREDITS_REQUIRED, min_value=1, max_value=120)
-    st.caption("Minimum confirmed transfer credits to be considered eligible. Most 4-year schools require 30–60 credits for junior standing.")
+    min_credits = st.number_input("Credits needed to transfer", value=MIN_CREDITS_REQUIRED, min_value=1, max_value=120)
+    st.caption("Input the number of credits you need to transfer to be eligible (typically 30–60 for junior standing).")
 
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown('<div class="tzai-lbl">Your courses <span style="color:var(--red);font-size:0.65rem;">✦ Title &amp; Description required per course</span></div>', unsafe_allow_html=True)
@@ -374,14 +374,6 @@ st.markdown('<div class="tzai-lbl">Your courses <span style="color:var(--red);fo
 DEFAULT_COURSES = [
     ("ACC", "211", "PRINCIPLES OF ACCOUNTING I",
      "Introduces accounting principles with respect to financial reporting. Includes the accounting cycle, financial statements, and the conceptual framework of financial accounting."),
-    ("ENG", "111", "COLLEGE COMPOSITION I",
-     "Focuses on developing the student's ability to produce clear, effective prose. Covers expository writing, analytical reading, research, and documentation."),
-    ("MTH", "263", "CALCULUS I",
-     "Covers limits, derivatives, and integrals of single-variable functions. Topics include techniques of differentiation and integration and their applications."),
-    ("BIO", "101", "GENERAL BIOLOGY I",
-     "Introduces cellular and molecular biology. Topics include cell structure, metabolism, photosynthesis, cellular respiration, DNA replication, and cell division."),
-    ("CSC", "221", "INTRODUCTION TO PROBLEM SOLVING AND PROGRAMMING",
-     "Introduces structured and object-oriented programming using a modern language. Topics include data types, control flow, functions, arrays, and basic algorithms."),
 ]
 n = st.number_input("Number of courses", 1, 30, len(DEFAULT_COURSES), key="n_courses")
 
