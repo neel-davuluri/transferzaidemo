@@ -15,8 +15,17 @@ TOP_K_DISPLAY = 5
 # Thresholds — softmax confidence over top-K displayed candidates (not all 50).
 # Softmax over K=5 means a winner with margin-gap=3 above competitors shows 85%.
 # A gap=1 (uncertain) shows 55%. Calibrated thresholds for K≈5:
-HIGH_CONFIDENCE_THRESHOLD = 0.84   # confirmed transfer
+HIGH_CONFIDENCE_THRESHOLD = 0.84   # confirmed transfer (global fallback)
 TRANSFER_THRESHOLD = 0.74          # possible transfer
+
+# Per-institution confirmed thresholds — override the global above.
+# W&M can use a lower value because its precision-coverage curve is better behaved
+# (89% precision at 0.79 vs. VT/UCSC which drop to ~80% at that threshold).
+HIGH_CONFIDENCE_THRESHOLDS = {
+    "wm":   0.79,
+    "vt":   0.85,
+    "ucsc": 0.85,
+}
 
 # Internal K used for softmax normalization (independent of display top_k)
 SOFTMAX_K = 10

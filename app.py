@@ -375,7 +375,31 @@ DEFAULT_COURSES = [
     ("ACC", "211", "PRINCIPLES OF ACCOUNTING I",
      "Introduces accounting principles with respect to financial reporting. Includes the accounting cycle, financial statements, and the conceptual framework of financial accounting."),
 ]
-n = st.number_input("Number of courses", 1, 30, len(DEFAULT_COURSES), key="n_courses")
+
+EXAMPLE_TRANSCRIPT = [
+    ("ACC", "211", "PRINCIPLES OF ACCOUNTING I",
+     "Introduces accounting principles with respect to financial reporting. Includes the accounting cycle, financial statements, and the conceptual framework of financial accounting."),
+    ("MTH", "263", "CALCULUS I",
+     "Limits, derivatives, and integrals of single-variable functions. Topics include continuity, differentiation rules, related rates, linear approximation, and definite integrals with applications to area and average value."),
+    ("ENG", "111", "COLLEGE COMPOSITION I",
+     "Focuses on the writing process, critical thinking, and rhetorical strategies for academic and professional contexts. Students write essays for a variety of purposes and audiences, with emphasis on analysis and argumentation."),
+]
+
+def _load_example():
+    st.session_state["n_courses"] = len(EXAMPLE_TRANSCRIPT)
+    for i, (dept, num, title, desc) in enumerate(EXAMPLE_TRANSCRIPT):
+        st.session_state[f"d_{i}"] = dept
+        st.session_state[f"n_{i}"] = num
+        st.session_state[f"t_{i}"] = title
+        st.session_state[f"x_{i}"] = desc
+        st.session_state[f"c_{i}"] = 3
+
+col_n, col_ex = st.columns([3, 1])
+with col_n:
+    n = st.number_input("Number of courses", 1, 30, len(DEFAULT_COURSES), key="n_courses")
+with col_ex:
+    st.markdown("<div style='padding-top:1.6rem;'></div>", unsafe_allow_html=True)
+    st.button("Load example transcript", on_click=_load_example, key="load_ex")
 
 # Column headers
 hdr = st.columns([2, 1, 1, 1])
@@ -484,5 +508,26 @@ else:
     <div class="tzai-empty">
       <div class="tzai-empty-ico">📋</div>
       <div class="tzai-empty-title">Fill in your courses above</div>
-      <div class="tzai-empty-sub">then click Evaluate Transcript</div>
+      <div class="tzai-empty-sub">or click "Load example transcript" to see a demo</div>
     </div>""", unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+with st.expander("About this system"):
+    st.markdown("""
+**TransferzAI** uses a two-stage AI pipeline to predict transfer credit eligibility:
+
+1. **Retrieval** — Reciprocal Rank Fusion over a fine-tuned BGE bi-encoder and TF-IDF retrieves the top-100 candidates from the target institution's catalog.
+2. **Reranking** — An XGBoost model scores each candidate on 13 features (semantic similarity, department alignment, course level, title match, and interaction terms). Confidence is computed via softmax over the top-10 margins.
+
+**Confidence tiers:**
+- **Green (≥ 84%)** — Confirmed transfer. Counted toward your credit total.
+- **Yellow (74–84%)** — Possible match. Shown but not counted as confirmed.
+- **Gray (< 74%)** — System abstains rather than guess.
+
+**Performance** (held-out test set, 308 samples across 3 institutions):
+precision > 90% when the model answers · Top-3 recall 66–85% · ECE < 0.010
+
+Results are AI-generated estimates. Always confirm with your registrar's office.
+
+[GitHub](https://github.com/neel-davuluri/transferzaidemo) · [Fine-tuned BGE model](https://huggingface.co/hyperalpha/transferzai-bge)
+    """)

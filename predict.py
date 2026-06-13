@@ -28,7 +28,7 @@ from sentence_transformers import SentenceTransformer
 from config import (
     BGE_MODEL_PATH, BGE_HF_REPO, ARTIFACTS_HF_REPO,
     QUERY_PREFIX, RETRIEVAL_K, RRF_K,
-    TOP_K_DISPLAY, HIGH_CONFIDENCE_THRESHOLD, TRANSFER_THRESHOLD,
+    TOP_K_DISPLAY, HIGH_CONFIDENCE_THRESHOLD, HIGH_CONFIDENCE_THRESHOLDS, TRANSFER_THRESHOLD,
     DEFAULT_CREDITS_PER_COURSE, MIN_CREDITS_REQUIRED, ARTIFACTS_DIR,
     SOFTMAX_K,
 )
@@ -218,7 +218,7 @@ def load_artifacts():
 
     # Confidence is now calibrated probability (calib_prob), not softmax.
     # Use a single global threshold; scorecard op_tau values were softmax-based.
-    print(f"[DIAG] HIGH_CONFIDENCE_THRESHOLD: {HIGH_CONFIDENCE_THRESHOLD}")
+    print(f"[DIAG] HIGH_CONFIDENCE_THRESHOLDS: {HIGH_CONFIDENCE_THRESHOLDS}")
 
     print("Loading fine-tuned BGE model...")
     a["bge_model"] = SentenceTransformer(
@@ -431,7 +431,8 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
         for i, (cand_code, rrf_score, sigs) in enumerate(cand_info_list):
             c    = float(conf[i])
             info = inst["lookup"].get(cand_code, {})
-            if c >= HIGH_CONFIDENCE_THRESHOLD:
+            high_thresh = HIGH_CONFIDENCE_THRESHOLDS.get(inst_key, HIGH_CONFIDENCE_THRESHOLD)
+            if c >= high_thresh:
                 conf_label = "High Confidence"
             elif c >= TRANSFER_THRESHOLD:
                 conf_label = "Possible Match"

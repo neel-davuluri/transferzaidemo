@@ -3,6 +3,9 @@
 <p align="center">
   Paste your community college courses — get back calibrated transfer probabilities for partner universities.
 </p>
+<p align="center">
+  <a href="https://transferzai.streamlit.app"><strong>→ Try the live demo</strong></a>
+</p>
 
 ---
 
@@ -79,6 +82,30 @@ Source dept codes (e.g. VCCS `HIS`, `MTH`, `BIO`) are compared against target in
 
 ---
 
+## Worked example
+
+**Input** — a VCCS course pasted into the Transcript Evaluator:
+
+| Field | Value |
+|:---|:---|
+| Dept | `ACC` |
+| Number | `211` |
+| Title | Principles of Accounting I |
+| Description | Introduces accounting principles with respect to financial reporting. Includes the accounting cycle, financial statements, and the conceptual framework of financial accounting. |
+
+**Output** (W&M, single course):
+
+```
+✓ William & Mary — 3 confirmed credits — transfer eligible
+
+ACC 211  →  BUAD 201  Introduction to Financial Accounting   87%  ● Confirmed
+              also: BUAD 202 · 41%   ACCT 301 · 28%
+```
+
+The system retrieved 100 W&M candidates via RRF, scored each on 13 features with XGBoost, and applied softmax over the top-10 margins. Confidence 87% clears the 84% confirmed threshold — the course counts toward transfer eligibility. A confidence between 74–84% would show yellow ("Possible") and not count toward the credit minimum. Below 74%, the system abstains entirely.
+
+---
+
 ## Training data
 
 | Source → Target | Train pairs | Test pairs |
@@ -97,7 +124,7 @@ FERPA compliant — course-level data only, no student PII. Equivalency tables s
 |:---|:---|
 | **MLflow** | Experiment tracking — logs hyperparams, Top-1/Top-3/Precision@τ/Brier/ECE per institution, and XGBoost model artifact for every training run |
 | **AWS S3** | Artifact storage — all pkl/npy files auto-uploaded to `transferzai-artifacts` after training; `predict.py` downloads from S3 when `AWS_ACCESS_KEY_ID` is set |
-| **HuggingFace Hub** | Deployment fallback — `hyperalpha/transferzai-artifacts` (artifacts), `hyperalpha/transferzai-bge` (BGE model) used for Streamlit Cloud |
+| **HuggingFace Hub** | Deployment fallback — [`hyperalpha/transferzai-artifacts`](https://huggingface.co/hyperalpha/transferzai-artifacts) (all pkl/npy artifacts), [`hyperalpha/transferzai-bge`](https://huggingface.co/hyperalpha/transferzai-bge) (fine-tuned BGE bi-encoder, publicly available) |
 | **Docker** | Container — `Dockerfile` packages the Streamlit app for deployment |
 
 ---
@@ -107,8 +134,27 @@ FERPA compliant — course-level data only, no student PII. Equivalency tables s
 ```bash
 git clone https://github.com/neel-davuluri/transferzaidemo.git
 cd transferzaidemo
+
+# Create and activate a virtual environment (Python 3.10+)
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
 pip install -r requirements.txt
-python download_artifacts.py   # pulls pre-trained model from HuggingFace
+
+# Download pre-trained artifacts from HuggingFace Hub (~500 MB)
+python download_artifacts.py
+
+streamlit run app.py
+# Open http://localhost:8501
+```
+
+**Optional — use AWS S3 for faster artifact loading** (requires AWS credentials):
+
+```bash
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_DEFAULT_REGION=us-east-1
+# predict.py will automatically download from s3://transferzai-artifacts instead of HuggingFace
 streamlit run app.py
 ```
 
@@ -117,7 +163,7 @@ streamlit run app.py
 ```bash
 python scripts/build_artifacts.py
 # ~8 min on Apple MPS, ~20 min on CPU
-# Auto-logs to MLflow and uploads artifacts to S3
+# Logs metrics to MLflow and auto-uploads artifacts to S3 if AWS credentials are set
 ```
 
 **View training runs:**
@@ -132,9 +178,10 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```bash
 docker build -t transferzai:latest .
 docker run -p 8501:8501 transferzai:latest
+# Open http://localhost:8501
 ```
 
-**Inference API:**
+**Python API:**
 
 ```python
 from predict import evaluate_transcript, load_artifacts
@@ -176,15 +223,6 @@ transferzaidemo/
 │   ├── build_vt_dataset.py     # Build VCCS→VT equivalency dataset
 │   ├── build_ccc_ucsc_dataset.py  # Build CCC→UCSC equivalency dataset
 │   └── ...                     # Catalog builders, data utilities
-├── pipeline/                   # Step-by-step training modules
-│   ├── step1_split.py          # Train/test split
-│   ├── step2_hard_negatives.py # Mine hard negatives from retrieval
-│   ├── step2_synthetic_negatives.py  # Claude-generated synthetic negatives
-│   ├── step3_finetune_bge.py   # Fine-tune BGE bi-encoder (contrastive learning)
-│   ├── step4_three_signal_rrf.py    # Build RRF retrieval
-│   ├── step5_xgboost.py        # Train XGBoost reranker
-│   ├── step6_final_eval.py     # Final evaluation
-│   └── step7_train_cross_encoder.py # Train cross-encoder (eval only, not used at inference)
 ├── eval/
 │   ├── benchmark_rerankers.py  # Compare reranking strategies side by side
 │   ├── test_cross_encoder.py   # Cross-encoder evaluation
@@ -208,10 +246,12 @@ transferzaidemo/
 
 ## Limitations
 
-- **Coverage is intentionally low.** At the high-confidence threshold (0.84), the system answers ~20-33% of queries. This is by design — better to say "check with an advisor" than predict incorrectly.
-- **Top-1 recall is moderate.** The correct course is the top prediction ~44-57% of the time; top-3 is 66-85%. The system is most useful when showing ranked options rather than a single answer.
-- **Sparse training data.** Only 7.4% (W&M), 4.2% (VT), and 3.4% (UCSC) of catalog courses have any training labels. 79% of VT target courses appear only once in training.
-- **Not a registrar decision.** Always confirm transfer credit decisions with your school's registrar before acting on results.
+- **Coverage is intentionally low.** At the high-confidence threshold (0.84), the system answers ~20-33% of queries. This is by design — better to abstain than answer incorrectly when a wrong answer costs a student a semester.
+- **Top-1 recall is moderate.** The correct course is the top prediction ~44-57% of the time; top-3 is 66-85%. The system is most useful as a ranked shortlist for an advisor, not a definitive single answer.
+- **Sparse training data.** Only 7.4% (W&M), 4.2% (VT), and 3.4% (UCSC) of catalog courses have any training labels. 79% of VT target courses appear only once in training — rare targets are the primary driver of low Top-1 at VT.
+- **Many-to-few disambiguation at UCSC.** The CCC→UCSC dataset contains multiple community colleges mapping to a single target catalog (141 unique UCSC targets). Courses with similar descriptions across different source institutions can produce conflicting training signal, contributing to UCSC's lower Top-1 (43.6% vs. 53-57% at W&M and VT).
+- **Calibration is in-sample.** The isotonic regression calibrator is currently fit on the training set itself, not a held-out calibration split. Calibration metrics (ECE < 0.010, Brier < 0.015) are likely slightly optimistic.
+- **Not a registrar decision.** Always confirm transfer credit decisions with your school's registrar's office before acting on results. This system provides probabilistic estimates, not official determinations.
 
 ---
 

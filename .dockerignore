@@ -1,0 +1,13 @@
+.venv
+__pycache__
+*.pyc
+.git
+mlruns/
+mlflow.db
+data/
+scripts/
+cross_encoder/
+finetuned_bge_three/
+ccc_transfers/
+pipeline/
+*.npy.bak
