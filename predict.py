@@ -198,6 +198,14 @@ def load_artifacts():
     with open(adir / "tfidf.pkl", "rb") as f:
         a["tfidf"] = pickle.load(f)
 
+    if (adir / "iso_cal.pkl").exists():
+        with open(adir / "iso_cal.pkl", "rb") as f:
+            a["iso_cal"] = pickle.load(f)
+        print("[DIAG] iso_cal loaded")
+    else:
+        a["iso_cal"] = None
+        print("[DIAG] iso_cal not found — falling back to sigmoid")
+
     if (adir / "feature_names.pkl").exists():
         with open(adir / "feature_names.pkl", "rb") as f:
             a["feature_names"] = pickle.load(f)
@@ -216,8 +224,6 @@ def load_artifacts():
     else:
         a["scorecard"] = {}
 
-    # Confidence is now calibrated probability (calib_prob), not softmax.
-    # Use a single global threshold; scorecard op_tau values were softmax-based.
     print(f"[DIAG] HIGH_CONFIDENCE_THRESHOLDS: {HIGH_CONFIDENCE_THRESHOLDS}")
 
     print("Loading fine-tuned BGE model...")
@@ -412,20 +418,22 @@ def predict_transfer(vccs_dept="", vccs_number="", vccs_title="", vccs_desc="",
             proba   = np.clip(proba, 1e-7, 1 - 1e-7)
             margins = np.log(proba / (1 - proba))
 
-        # Softmax over top-SOFTMAX_K candidates only (not all 50).
-        # Softmax over 50 dilutes confidence when dept boost lifts many same-dept
-        # courses simultaneously. Restricting to top-5 means a winner with a
-        # margin gap of 3 shows 85% instead of 33%, which is far more accurate.
-        # Monotone: better signals raise the winner's margin → always improves rank.
+        # Softmax over top-SOFTMAX_K margins → user-facing confidence.
+        # This is a relative signal: high confidence means the top candidate
+        # decisively outscored the other finalists, not that there is an X%
+        # absolute probability of being correct.
+        # iso_cal (loaded separately) calibrates per-candidate binary match
+        # probability and is used for Brier/ECE metrics only — it operates at
+        # a different granularity (candidate-level P(match)) and is not suitable
+        # for the per-query abstention gate.
         n_soft  = min(SOFTMAX_K, len(margins))
-        top_idx = np.argsort(margins)[::-1]          # all 50, sorted best→worst
+        top_idx = np.argsort(margins)[::-1]
         soft_margins = margins[top_idx[:n_soft]]
         soft_vals    = np.exp(soft_margins - soft_margins.max())
-        soft_vals   /= soft_vals.sum()               # stable softmax over top-K
+        soft_vals   /= soft_vals.sum()
         conf = np.zeros(len(margins))
         for rank, idx in enumerate(top_idx[:n_soft]):
             conf[idx] = soft_vals[rank]
-        # candidates outside top-K stay at 0 — below display cutoff
 
         inst_results = []
         for i, (cand_code, rrf_score, sigs) in enumerate(cand_info_list):
