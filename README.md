@@ -1,90 +1,166 @@
 <h1 align="center">TransferzAI</h1>
-<p align="center"><strong>AI-powered transfer credit evaluation across institutions</strong></p>
+
 <p align="center">
-  Paste your community college courses — get back calibrated transfer probabilities for partner universities.
+  <strong>Retrieve-then-rerank pipeline for university transfer credit matching</strong><br>
+  Two-stage ML system over 11,850 courses · 3 institutions · 308 held-out test samples
 </p>
+
 <p align="center">
-  <a href="https://transferzai.streamlit.app"><strong>→ Try the live demo</strong></a>
+  <a href="https://transferzai.streamlit.app"><strong>→ Live demo</strong></a> ·
+  <a href="https://huggingface.co/hyperalpha/transferzai-bge">Fine-tuned BGE model</a> ·
+  <a href="https://huggingface.co/hyperalpha/transferzai-artifacts">Artifacts</a>
 </p>
 
 ---
 
-## What it does
+## Problem
 
-TransferzAI tells you whether your community college courses transfer to William & Mary, Virginia Tech, or UC Santa Cruz — with a confidence score and a plain-English verdict. Paste a full transcript of course titles and descriptions and get back a per-course breakdown plus estimated transferable credit count.
+Community college students applying to transfer must manually verify whether each course they've taken is accepted for credit at their target institution. Articulation agreements exist but are buried in PDFs and spreadsheets — a D1 athletics department was doing this by hand for every incoming transfer student.
 
-**Live demo:** [transferzai.streamlit.app](https://transferzai.streamlit.app)
+TransferzAI automates that lookup. Given a source course (title + description), it retrieves and ranks candidates from the target institution's catalog, returning a ranked shortlist with a confidence score. When the system isn't confident enough, it abstains rather than guess — wrong answers cost students a semester.
 
-Designed for students and college advisors where false positives are costly. The system is built to abstain rather than guess: at the high-confidence threshold, precision exceeds 90% on held-out test data.
+**Presented at the Applied ML Conference, April 2026.**
 
 ---
 
 ## Results
 
-| Institution | Top-1 | Top-3 | Precision @ τ | Coverage @ τ | τ | Brier | ECE |
-|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| William & Mary | 56.7% | 77.6% | 90.9% | 32.8% | 0.80 | 0.0125 | 0.0089 |
-| Virginia Tech | 53.3% | 85.0% | 94.1% | 28.3% | 0.85 | 0.0143 | 0.0089 |
-| UC Santa Cruz | 43.6% | 65.7% | 91.7% | 19.9% | 0.90 | 0.0148 | 0.0098 |
+Evaluated on stratified held-out splits (80/20, `random_state=42`, stratified by target department). Brier and ECE are computed from an isotonic regression calibrator trained offline — the calibrator is not wired into the serving path (see [Evaluation notes](#evaluation-notes)).
 
-**Top-1** = correct course is the #1 prediction. **Top-3** = correct course is in the top 3 predictions.  
-**τ** = first confidence threshold where precision ≥ 90% on held-out test data. **Coverage** = fraction of queries where the model is confident enough to return an answer — the system abstains on the rest.
+| Institution | n | Top-1 | Top-3 | Prec @ τ | Cov @ τ | τ | Brier | ECE |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| William & Mary | 67 | 56.7% | 77.6% | 90.9% | 32.8% | 0.79 | 0.0125 | 0.0089 |
+| Virginia Tech | 60 | 53.3% | 85.0% | 94.1% | 28.3% | 0.85 | 0.0143 | 0.0089 |
+| UC Santa Cruz | 181 | 43.6% | 65.7% | 91.7% | 19.9% | 0.85 | 0.0148 | 0.0098 |
+
+**Top-1 / Top-3** — correct course is the #1 / top-3 prediction.  
+**Prec @ τ** — precision among queries where the model commits to an answer.  
+**Cov @ τ** — fraction of queries answered; the system abstains on the rest.  
+**τ** — per-institution confidence threshold where precision first reaches ≥ 90%.
 
 ---
 
 ## Architecture
 
-Two-stage retrieve-then-rerank pipeline, run per institution.
+```
+Query (course title + description + dept code)
+            │
+            ▼
+┌───────────────────────────────────────────┐
+│          Stage 1 — RRF Retrieval          │
+│                                           │
+│  BGE bi-encoder ──┐                      │
+│  (384-dim, fine-  │  Reciprocal Rank      │
+│   tuned, k=200)   ├─► Fusion (k=60)      │
+│                   │   → top-100           │
+│  TF-IDF          ──┘                     │
+│  (15k features,                          │
+│   1-2 gram)                              │
+└───────────────────────────────────────────┘
+            │  top-100 candidates
+            ▼
+┌───────────────────────────────────────────┐
+│       Stage 2 — XGBoost Reranker          │
+│                                           │
+│  13 features per (query, candidate)       │
+│  XGBClassifier (500 trees, depth=4)      │
+│  → decision margins                       │
+│  → softmax over top-10 margins            │
+│  → per-query confidence score             │
+└───────────────────────────────────────────┘
+            │
+            ▼
+┌───────────────────────────────────────────┐
+│          Abstention Gate                  │
+│                                           │
+│  conf ≥ τ_inst  →  Confirmed  (green)    │
+│  conf ≥ 0.74    →  Possible   (yellow)   │
+│  conf < 0.74    →  No match   (abstain)  │
+└───────────────────────────────────────────┘
+```
 
-**Stage 1 — RRF Retrieval**
+**τ per institution:** W&M = 0.79, VT = 0.85, UCSC = 0.85 (derived from threshold sweep on held-out test set, targeting ≥ 90% precision).
 
-Fuses two signals to find the top-100 candidates:
+---
 
-| Signal | Role |
-|:---|:---|
-| Fine-tuned BGE bi-encoder | Semantic similarity (contrastive learning on transfer pairs) |
-| TF-IDF (1–2 gram, 15k features) | Lexical keyword overlap |
+## How it works
 
-Reciprocal Rank Fusion (k=60) combines the ranked lists. Training retrieval also adds a 0.5-weighted department string-similarity signal to improve hard-negative recall — this is intentionally excluded from inference retrieval.
+### Stage 1 — Retrieval
 
-**Stage 2 — XGBoost Reranker**
+Two signals are fused via Reciprocal Rank Fusion to produce a top-100 candidate list:
 
-Scores each of the top-100 candidates on 13 features:
+| Signal | Implementation | Role |
+|:---|:---|:---|
+| BGE bi-encoder | `BAAI/bge-small-en-v1.5`, fine-tuned on transfer pairs | Semantic "transfers as" similarity |
+| TF-IDF | 15k features, 1–2 gram, sublinear_tf, max_df=0.95 | Lexical keyword overlap |
+
+RRF score: `Σ 1 / (60 + rank_i)` across both ranked lists. Training retrieval adds a 0.5-weighted department string-similarity signal to improve hard-negative recall — intentionally excluded from inference retrieval to prevent train/inference distribution mismatch.
+
+**Why fine-tune the bi-encoder?** Off-the-shelf embeddings measure semantic similarity. "Introduction to Chemistry" and "Organic Chemistry II" are semantically close but don't transfer to the same course. A naive cross-encoder reranker exploited this — it dropped top-3 recall from ~46% to 28% by confidently promoting semantically similar but non-equivalent courses. Contrastive fine-tuning on transfer pairs teaches the retriever the "transfers as" relationship instead.
+
+### Stage 2 — Reranking
+
+XGBoost scores each of the top-100 candidates on 13 handcrafted features:
 
 | Group | Features |
 |:---|:---|
-| Semantic | `bge_sim` — BGE cosine similarity |
-| Lexical | `tfidf_sim` (full text), `tfidf_title_sim` (titles only), `title_sim` (SequenceMatcher ratio) |
-| Structural | `dept_sim` (source→target dept code similarity), `level_ratio`, `same_level`, `rrf_score` |
+| Semantic | `bge_sim` |
+| Lexical | `tfidf_sim`, `tfidf_title_sim`, `title_sim` |
+| Structural | `dept_sim`, `level_ratio`, `same_level`, `rrf_score` |
 | Interactions | `bge_x_dept`, `bge_x_title`, `bge_x_tfidf`, `dept_x_title`, `dept_x_level` |
 
-Per-query softmax over the top-10 XGBoost margins gives the confidence score. Restricting softmax to the top-10 candidates prevents dilution across the full 100-candidate pool.
+**Why XGBoost over a cross-encoder?** ~1,200 labeled positive training pairs across 3 institutions — too few to fine-tune a neural reranker without overfitting. XGBoost on 13 features generalizes better at this data scale, runs in <1ms per query, and produces interpretable feature importances.
 
-**Abstention gate**
+**Training setup:** `collect()` expands each positive training query into a pool of 50 candidates via RRF, yielding ~61,600 training rows at a 1:49 positive:negative ratio. `scale_pos_weight=49` corrects for the imbalance.
 
-| Confidence | Label | Display |
-|:---|:---|:---|
-| ≥ 0.84 | Confirmed | Green — counts toward transfer eligibility |
-| ≥ 0.74 | Possible | Yellow — shown but not counted as confirmed |
-| < 0.74 | No match | Gray — system abstains |
+**Confidence score:** Softmax over the top-10 XGBoost decision margins. This is a *relative decisiveness signal* — how much the top candidate outscored the other finalists — not a calibrated probability. Restricting to top-10 prevents confidence dilution when department signals inflate many same-department candidates simultaneously.
 
-### Key design decisions
+---
 
-**Semantic similarity ≠ transfer eligibility.**
+## Key engineering decisions
 
-"Introduction to Chemistry" and "Organic Chemistry II" score highly similar in any embedding space — but they don't transfer to the same course. Naively using a cross-encoder reranker dropped top-3 recall from ~46% to 28% by confidently promoting semantically similar but non-transferring courses.
+**Train/inference retrieval asymmetry.**
+The training retrieval adds a department similarity boost (weight=0.5) to ensure the true match lands in the top-50 pool for XGBoost training. Inference retrieval does not use this boost — empirically it shifts the score distribution in a way that hurts inference precision. The asymmetry is intentional.
 
-The fix: fine-tune the retriever on transfer pairs using contrastive learning, so it learns the "transfers as" relationship rather than generic similarity. Structural features (level, title match, dept alignment) in the reranker provide additional signal that pure semantic models miss.
+**Feature distribution bug.**
+`dept_sim` was hardcoded to 0.0 at inference. This feature carries ~15% XGBoost importance including interaction terms; zeroing it at inference was corrupting 4 of 13 features on every prediction. The symptom was suppressed confidence scores across the board. Post-fix, XGBoost decision margins shifted from −0.95 → +4.25 on affected queries. Caught through feature-value auditing, not metric drift.
 
-**Department similarity is live at inference.**
+**Per-institution confidence thresholds.**
+A single global threshold produces different precision/coverage tradeoffs across institutions due to catalog size and training data density differences. Thresholds are set per-institution (W&M: 0.79, VT: 0.85, UCSC: 0.85) based on held-out sweep analysis, with a global fallback of 0.84 for any new institution added to the registry.
 
-Source dept codes (e.g. VCCS `HIS`, `MTH`, `BIO`) are compared against target institution dept codes using SequenceMatcher. Cross-dept matches like `HIS→HIST` score ~0.86, while cross-semantic mappings like `ACC→BUAD` score ~0.29 — matching the distribution seen during training. All 13 features including dept interactions are active.
+**Selective prediction as a product requirement.**
+The abstention rate (~70% at confirmed threshold) is not a limitation — it's the design. At these coverage rates, the system answers correctly >90% of the time. Lowering thresholds to increase coverage trades precision for recall in a domain where false positives have direct student consequences.
+
+---
+
+## Evaluation notes
+
+**Brier score and ECE** are computed using an isotonic regression calibrator (`iso_cal.pkl`) fit on training-set sigmoid probabilities vs. binary match/no-match labels. The calibrator is loaded at inference but its output is not used for the user-facing confidence score or the abstention gate. These metrics describe the calibration quality of the per-candidate binary classifier, not of the softmax confidence score shown in the UI.
+
+**Calibration caveat:** `iso_cal` is fit on the training set, not a held-out calibration split. ECE and Brier are likely slightly optimistic. Fixing this requires holding out a calibration split before training and fitting the calibrator on that.
+
+**What "confidence" means in the UI:** Softmax over top-10 XGBoost margins. High confidence means the top candidate's margin was substantially larger than the other 9 finalists — a relative signal, not an absolute probability of correctness.
+
+---
+
+## Training data
+
+| Source → Target | Positive pairs | Train | Test |
+|:---|:---:|:---:|:---:|
+| VCCS → William & Mary | 334 | 267 | 67 |
+| VCCS → Virginia Tech | 303 | 242 | 61 |
+| CCC → UC Santa Cruz | 904 | 723 | 181 |
+| **Total** | **1,541** | **1,232** | **309** |
+
+Ground-truth equivalency tables sourced from official articulation agreements. Course-level data only — no student PII (FERPA compliant).
+
+Hard negatives mined from retrieval-stage false positives. LLM-generated synthetic negatives (267 cached in `data/_cache_synthetic_negatives.json`) augment W&M training. Negative construction via `scripts/build_artifacts.py:collect()`.
 
 ---
 
 ## Worked example
 
-**Input** — a VCCS course pasted into the Transcript Evaluator:
+**Input:**
 
 | Field | Value |
 |:---|:---|
@@ -93,93 +169,16 @@ Source dept codes (e.g. VCCS `HIS`, `MTH`, `BIO`) are compared against target in
 | Title | Principles of Accounting I |
 | Description | Introduces accounting principles with respect to financial reporting. Includes the accounting cycle, financial statements, and the conceptual framework of financial accounting. |
 
-**Output** (W&M, single course):
+**Output (W&M):**
 
 ```
-✓ William & Mary — 3 confirmed credits — transfer eligible
+✓ William & Mary — 3 confirmed credits
 
 ACC 211  →  BUAD 201  Introduction to Financial Accounting   87%  ● Confirmed
-              also: BUAD 202 · 41%   ACCT 301 · 28%
+              also: BUAD 202 · 41%   BUAD 301 · 28%
 ```
 
-The system retrieved 100 W&M candidates via RRF, scored each on 13 features with XGBoost, and applied softmax over the top-10 margins. Confidence 87% clears the 84% confirmed threshold — the course counts toward transfer eligibility. A confidence between 74–84% would show yellow ("Possible") and not count toward the credit minimum. Below 74%, the system abstains entirely.
-
----
-
-## Training data
-
-| Source → Target | Train pairs | Test pairs |
-|:---|:---:|:---:|
-| VCCS → William & Mary | ~214 | 67 |
-| VCCS → Virginia Tech | ~193 | 60 |
-| CCC → UC Santa Cruz | ~578 | 181 |
-
-FERPA compliant — course-level data only, no student PII. Equivalency tables sourced from official articulation agreements.
-
----
-
-## MLOps
-
-| Tool | Role |
-|:---|:---|
-| **MLflow** | Experiment tracking — logs hyperparams, Top-1/Top-3/Precision@τ/Brier/ECE per institution, and XGBoost model artifact for every training run |
-| **AWS S3** | Artifact storage — all pkl/npy files auto-uploaded to `transferzai-artifacts` after training; `predict.py` downloads from S3 when `AWS_ACCESS_KEY_ID` is set |
-| **HuggingFace Hub** | Deployment fallback — [`hyperalpha/transferzai-artifacts`](https://huggingface.co/hyperalpha/transferzai-artifacts) (all pkl/npy artifacts), [`hyperalpha/transferzai-bge`](https://huggingface.co/hyperalpha/transferzai-bge) (fine-tuned BGE bi-encoder, publicly available) |
-| **Docker** | Container — `Dockerfile` packages the Streamlit app for deployment |
-
----
-
-## Quickstart
-
-```bash
-git clone https://github.com/neel-davuluri/transferzaidemo.git
-cd transferzaidemo
-
-# Create and activate a virtual environment (Python 3.10+)
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-
-pip install -r requirements.txt
-
-# Download pre-trained artifacts from HuggingFace Hub (~500 MB)
-python download_artifacts.py
-
-streamlit run app.py
-# Open http://localhost:8501
-```
-
-**Optional — use AWS S3 for faster artifact loading** (requires AWS credentials):
-
-```bash
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_DEFAULT_REGION=us-east-1
-# predict.py will automatically download from s3://transferzai-artifacts instead of HuggingFace
-streamlit run app.py
-```
-
-**Retrain from scratch:**
-
-```bash
-python scripts/build_artifacts.py
-# ~8 min on Apple MPS, ~20 min on CPU
-# Logs metrics to MLflow and auto-uploads artifacts to S3 if AWS credentials are set
-```
-
-**View training runs:**
-
-```bash
-mlflow ui --backend-store-uri sqlite:///mlflow.db
-# Open http://127.0.0.1:5000
-```
-
-**Docker:**
-
-```bash
-docker build -t transferzai:latest .
-docker run -p 8501:8501 transferzai:latest
-# Open http://localhost:8501
-```
+System retrieved 100 W&M candidates via RRF, scored each on 13 features, applied softmax over top-10 margins. Confidence 87% ≥ W&M threshold (0.79) → Confirmed. Between 0.74–0.79 → Possible (yellow, not counted). Below 0.74 → system abstains.
 
 **Python API:**
 
@@ -207,38 +206,101 @@ for inst, r in results.items():
 
 ---
 
+## Quickstart
+
+```bash
+git clone https://github.com/neel-davuluri/transferzaidemo.git
+cd transferzaidemo
+
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+pip install -r requirements.txt
+
+# Download pre-trained artifacts from HuggingFace Hub (~500 MB)
+python download_artifacts.py
+
+streamlit run app.py
+# Open http://localhost:8501
+```
+
+**AWS S3 (faster artifact loading):**
+
+```bash
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_DEFAULT_REGION=us-east-1
+# predict.py auto-downloads from s3://transferzai-artifacts when credentials are set
+streamlit run app.py
+```
+
+**Retrain from scratch (~8 min on MPS, ~20 min on CPU):**
+
+```bash
+python scripts/build_artifacts.py
+# Logs to MLflow, auto-uploads artifacts to S3 if credentials are set
+```
+
+**View experiment runs:**
+
+```bash
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+# Open http://127.0.0.1:5000
+```
+
+**Docker:**
+
+```bash
+docker build -t transferzai:latest .
+docker run -p 8501:8501 transferzai:latest
+```
+
+---
+
+## MLOps
+
+| Tool | Role |
+|:---|:---|
+| **MLflow** | Logs hyperparams, per-institution Top-1/Top-3/Prec@τ/Cov@τ/Brier/ECE, and XGBoost model artifact for every training run |
+| **AWS S3** (`transferzai-artifacts`) | All pkl/npy artifacts auto-uploaded post-training; `predict.py` downloads at startup when `AWS_ACCESS_KEY_ID` is set |
+| **HuggingFace Hub** | [`hyperalpha/transferzai-artifacts`](https://huggingface.co/hyperalpha/transferzai-artifacts) and [`hyperalpha/transferzai-bge`](https://huggingface.co/hyperalpha/transferzai-bge) — deployment fallback for Streamlit Cloud |
+| **Docker** | Python 3.11-slim container, artifacts pre-loaded, port 8501 |
+
+---
+
 ## Project structure
 
 ```
 transferzaidemo/
-├── app.py                      # Streamlit app — Transcript Evaluator
-├── predict.py                  # Inference: load_artifacts(), evaluate_transcript()
-├── config.py                   # Hyperparameters, thresholds, model paths
-├── paths.py                    # Centralized data file paths
+├── app.py                      # Streamlit UI — Transcript Evaluator
+├── predict.py                  # Inference: load_artifacts(), predict_transfer(), evaluate_transcript()
+├── config.py                   # Hyperparameters, per-institution thresholds, model paths
+├── paths.py                    # Centralized data path definitions
 ├── download_artifacts.py       # Pull pre-trained artifacts from HuggingFace Hub
-├── Dockerfile                  # Container for Streamlit deployment
-├── requirements.txt            # Python dependencies
+├── Dockerfile / .dockerignore
+├── requirements.txt
 ├── scripts/
-│   ├── build_artifacts.py      # Full retrain pipeline (BGE embeddings + XGBoost + eval + S3 upload)
-│   ├── build_vt_dataset.py     # Build VCCS→VT equivalency dataset
-│   ├── build_ccc_ucsc_dataset.py  # Build CCC→UCSC equivalency dataset
-│   └── ...                     # Catalog builders, data utilities
+│   ├── build_artifacts.py      # Full training pipeline — BGE embeddings, XGBoost, eval, S3 upload
+│   ├── build_vt_dataset.py     # Builds VCCS→VT equivalency dataset
+│   ├── build_ccc_ucsc_dataset.py
+│   └── build_{vt,ucsc}_catalog.py
 ├── eval/
-│   ├── benchmark_rerankers.py  # Compare reranking strategies side by side
-│   ├── test_cross_encoder.py   # Cross-encoder evaluation
-│   ├── eval_product_metrics.py # Core metric suite (Top-1/3, Prec@τ, Cov@τ, Brier, ECE)
-│   ├── sequence_features.py    # Shared text augmentation helpers
-│   └── ...                     # Error analysis, institution-specific audits
+│   ├── benchmark_rerankers.py  # RRF baseline vs. custom CE vs. BGE-Reranker-v2-m3
+│   ├── eval_product_metrics.py # Full metric suite (Top-1/3, Prec@τ, Cov@τ, Brier, ECE)
+│   ├── test_cross_encoder.py   # Cross-encoder holdout evaluation
+│   ├── ucsc_error_analysis.py  # UCSC error breakdown
+│   ├── llm_judge.py            # Claude-as-judge for hard cases
+│   └── sequence_features.py    # Text augmentation helpers
 ├── artifacts/                  # Serialized model artifacts (pkl + npy)
-│   ├── classifier.pkl          # XGBoost reranker
+│   ├── classifier.pkl          # XGBoost reranker (XGBClassifier)
 │   ├── tfidf.pkl               # TF-IDF vectorizer (15k features)
-│   ├── iso_cal.pkl             # Isotonic calibrator
+│   ├── iso_cal.pkl             # Isotonic calibrator — offline eval only, not in serving path
 │   ├── scorecard.pkl           # Per-institution metrics + full threshold sweep
-│   ├── feature_names.pkl       # Ordered feature names (must match extract_signals)
-│   ├── dept_prior_map.pkl      # P(target_dept | source_dept) — built, not yet used
-│   └── {wm,vt,ucsc}_{lookup,codes,embeddings}.*  # Per-institution catalog artifacts
+│   ├── feature_names.pkl       # Ordered feature list (must match extract_signals)
+│   ├── dept_prior_map.pkl      # P(target_dept | source_dept) — built, not yet used as feature
+│   └── {wm,vt,ucsc}_{lookup,codes,embeddings}.*
 └── data/
-    ├── catalogs/               # Full course catalogs (W&M, VT, UCSC, Northeastern)
+    ├── catalogs/               # Full course catalogs per institution
     └── equivalency/            # Ground-truth transfer equivalency tables
 ```
 
@@ -246,16 +308,29 @@ transferzaidemo/
 
 ## Limitations
 
-- **Coverage is intentionally low.** At the high-confidence threshold (0.84), the system answers ~20-33% of queries. This is by design — better to abstain than answer incorrectly when a wrong answer costs a student a semester.
-- **Top-1 recall is moderate.** The correct course is the top prediction ~44-57% of the time; top-3 is 66-85%. The system is most useful as a ranked shortlist for an advisor, not a definitive single answer.
-- **Sparse training data.** Only 7.4% (W&M), 4.2% (VT), and 3.4% (UCSC) of catalog courses have any training labels. 79% of VT target courses appear only once in training — rare targets are the primary driver of low Top-1 at VT.
-- **Many-to-few disambiguation at UCSC.** The CCC→UCSC dataset contains multiple community colleges mapping to a single target catalog (141 unique UCSC targets). Courses with similar descriptions across different source institutions can produce conflicting training signal, contributing to UCSC's lower Top-1 (43.6% vs. 53-57% at W&M and VT).
-- **Calibration is in-sample.** The isotonic regression calibrator is currently fit on the training set itself, not a held-out calibration split. Calibration metrics (ECE < 0.010, Brier < 0.015) are likely slightly optimistic.
-- **Not a registrar decision.** Always confirm transfer credit decisions with your school's registrar's office before acting on results. This system provides probabilistic estimates, not official determinations.
+- **Coverage is low by design.** At confirmed thresholds (0.79–0.85), the system answers 20–33% of queries. Abstaining on the rest is the correct product decision when wrong answers cost students a semester.
+- **Top-1 accuracy is moderate.** Correct course is the top prediction 44–57% of the time. Top-3 (66–85%) is the more useful metric — the system is designed as a ranked shortlist, not a single-answer oracle.
+- **Sparse training labels.** 7.4% (W&M), 4.2% (VT), and 3.4% (UCSC) of catalog courses appear in training. 79% of VT target courses appear only once — primary driver of VT's lower Top-1.
+- **Many-to-few disambiguation at UCSC.** Multiple community colleges map to 141 UCSC targets, introducing conflicting training signal for semantically similar source courses.
+- **Calibrator not in serving path.** `iso_cal.pkl` is loaded at startup but its output is not used for the user-facing confidence score. ECE/Brier metrics describe the calibrator's offline fit. Wiring the calibrator into serving requires re-deriving thresholds on the calibrated probability scale.
+- **In-sample calibration.** `iso_cal` is fit on training data, making ECE/Brier slightly optimistic. Fix: hold out a calibration split before training.
+
+---
+
+## Roadmap
+
+| Priority | Item |
+|:---|:---|
+| High | Wire `iso_cal` into serving path with re-derived per-institution thresholds |
+| High | `dept_prior_map` as a 14th XGBoost feature — P(target_dept \| source_dept) built but unused |
+| High | Switch to `rank:pairwise` XGBoost objective — currently pointwise binary logloss; expected +3–6pp Top-1 |
+| Medium | Cross-encoder reranker on XGBoost top-10 at inference — model trained, blocked by config flag; expected +5–12pp Top-1 |
+| Medium | Synthetic positives for rare VT targets — 79% of VT courses appear once in training |
+| Medium | Held-out calibration split — fit `iso_cal` on 10% holdout, not training data |
 
 ---
 
 ## Contact
 
-Neel Davuluri · neel.davuluri@gmail.com  
+Neel Davuluri · [neel.davuluri@gmail.com](mailto:neel.davuluri@gmail.com)  
 Garrett Bellin
