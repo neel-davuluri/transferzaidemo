@@ -15,7 +15,7 @@
 
 ## Problem
 
-Community college students applying to transfer must manually verify whether each course they've taken is accepted for credit at their target institution. Articulation agreements exist but are buried in PDFs and spreadsheets — a D1 athletics department was doing this by hand for every incoming transfer student.
+When a college athlete enters the transfer portal, coaches have a narrow window to evaluate and recruit them. Academic eligibility — whether the player's credits transfer and they'll have enough standing to compete — has to be verified by the registrar before a scholarship offer can be extended. That process takes days or weeks. In the meantime, the player is fielding offers from other schools, and the first program to give them a clear answer often wins the recruitment. A D1 athletics department was doing this eligibility check by hand for every prospective transfer.
 
 TransferzAI automates that lookup. Given a source course (title + description), it retrieves and ranks candidates from the target institution's catalog, returning a ranked shortlist with a confidence score. When the system isn't confident enough, it abstains rather than guess — wrong answers cost students a semester.
 
