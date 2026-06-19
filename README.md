@@ -217,9 +217,7 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
 pip install -r requirements.txt
 
-# Download pre-trained artifacts from HuggingFace Hub (~500 MB)
-python download_artifacts.py
-
+# Artifacts download automatically from HuggingFace Hub on first run (~500 MB)
 streamlit run app.py
 # Open http://localhost:8501
 ```
@@ -276,7 +274,6 @@ transferzaidemo/
 ├── predict.py                  # Inference: load_artifacts(), predict_transfer(), evaluate_transcript()
 ├── config.py                   # Hyperparameters, per-institution thresholds, model paths
 ├── paths.py                    # Centralized data path definitions
-├── download_artifacts.py       # Pull pre-trained artifacts from HuggingFace Hub
 ├── Dockerfile / .dockerignore
 ├── requirements.txt
 ├── scripts/
@@ -285,19 +282,19 @@ transferzaidemo/
 │   ├── build_ccc_ucsc_dataset.py
 │   └── build_{vt,ucsc}_catalog.py
 ├── eval/
+│   ├── audit.py                # Confidence intervals + retrieval recall@k
 │   ├── benchmark_rerankers.py  # RRF baseline vs. custom CE vs. BGE-Reranker-v2-m3
-│   ├── eval_product_metrics.py # Full metric suite (Top-1/3, Prec@τ, Cov@τ, Brier, ECE)
 │   ├── test_cross_encoder.py   # Cross-encoder holdout evaluation
-│   ├── ucsc_error_analysis.py  # UCSC error breakdown
-│   ├── llm_judge.py            # Claude-as-judge for hard cases
-│   └── sequence_features.py    # Text augmentation helpers
+│   ├── ucsc_error_analysis.py  # UCSC error breakdown by failure type
+│   ├── run_llm_eval.py         # Claude-as-judge evaluation on hard cases
+│   ├── llm_judge.py            # Claude-as-judge pair scorer
+│   └── sequence_features.py    # Sequence position text augmentation helpers
 ├── artifacts/                  # Serialized model artifacts (pkl + npy)
-│   ├── classifier.pkl          # XGBoost reranker (XGBClassifier)
+│   ├── classifier.pkl          # XGBoost reranker (XGBClassifier, 500 trees)
 │   ├── tfidf.pkl               # TF-IDF vectorizer (15k features)
-│   ├── iso_cal.pkl             # Isotonic calibrator — offline eval only, not in serving path
+│   ├── iso_cal.pkl             # Isotonic calibrator — offline Brier/ECE only, not in serving path
 │   ├── scorecard.pkl           # Per-institution metrics + full threshold sweep
-│   ├── feature_names.pkl       # Ordered feature list (must match extract_signals)
-│   ├── dept_prior_map.pkl      # P(target_dept | source_dept) — built, not yet used as feature
+│   ├── feature_names.pkl       # Ordered feature list (must match extract_signals in predict.py)
 │   └── {wm,vt,ucsc}_{lookup,codes,embeddings}.*
 └── data/
     ├── catalogs/               # Full course catalogs per institution
@@ -321,10 +318,11 @@ transferzaidemo/
 
 | Priority | Item |
 |:---|:---|
-| High | Wire `iso_cal` into serving path with re-derived per-institution thresholds |
-| High | `dept_prior_map` as a 14th XGBoost feature — P(target_dept \| source_dept) built but unused |
+| High | Re-derive per-institution thresholds against serving confidence scale — threshold sweep in `build_artifacts.py` uses softmax over all 100 pool candidates; `predict.py` uses softmax over top-10 only; τ values need recalibration |
+| High | Wire `iso_cal` into serving path with recalibrated thresholds |
+| High | `dept_prior_map` as a 14th XGBoost feature — P(target_dept \| source_dept) is computed during training but not saved or used at inference |
 | High | Switch to `rank:pairwise` XGBoost objective — currently pointwise binary logloss; expected +3–6pp Top-1 |
-| Medium | Cross-encoder reranker on XGBoost top-10 at inference — model trained, blocked by config flag; expected +5–12pp Top-1 |
+| Medium | Cross-encoder reranker on XGBoost top-10 at inference — model trained, not yet wired in; expected +5–12pp Top-1 |
 | Medium | Synthetic positives for rare VT targets — 79% of VT courses appear once in training |
 | Medium | Held-out calibration split — fit `iso_cal` on 10% holdout, not training data |
 

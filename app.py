@@ -519,9 +519,9 @@ with st.expander("About this system"):
 1. **Retrieval** — Reciprocal Rank Fusion over a fine-tuned BGE bi-encoder and TF-IDF retrieves the top-100 candidates from the target institution's catalog.
 2. **Reranking** — An XGBoost model scores each candidate on 13 features (semantic similarity, department alignment, course level, title match, and interaction terms). Confidence is computed via softmax over the top-10 margins.
 
-**Confidence tiers:**
-- **Green (≥ 84%)** — Confirmed transfer. Counted toward your credit total.
-- **Yellow (74–84%)** — Possible match. Shown but not counted as confirmed.
+**Confidence tiers** (softmax over top-10 XGBoost margins — relative decisiveness, not calibrated probability):
+- **Green** — Confirmed transfer (W&M ≥ 79%, VT/UCSC ≥ 85%). Counted toward your credit total.
+- **Yellow (≥ 74%)** — Possible match. Shown but not counted as confirmed.
 - **Gray (< 74%)** — System abstains rather than guess.
 
 **Performance** (held-out test set, 308 samples across 3 institutions):

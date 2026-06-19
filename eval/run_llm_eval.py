@@ -33,8 +33,9 @@ from predict import predict_transfer, load_artifacts
 from eval.llm_judge import judge_pair
 
 
+from paths import TEST_POS
+
 RESULTS_DIR = Path(__file__).parent / "results"
-TEST_POS_PATH = Path(__file__).parent.parent / "data" / "_test_pos.csv"
 
 
 def _get_wm_info(artifacts, code: str) -> dict:
@@ -59,7 +60,7 @@ def _parse_vccs_dept_and_number(vccs_course_str: str) -> tuple[str, str]:
 
 def run_eval(run_all: bool = False, limit: int | None = None, delay: float = 0.3):
     print("Loading test set...")
-    test_df = pd.read_csv(TEST_POS_PATH)
+    test_df = pd.read_csv(TEST_POS)
     print(f"  {len(test_df)} held-out positive pairs")
 
     print("\nLoading model artifacts (may download BGE model on first run)...")

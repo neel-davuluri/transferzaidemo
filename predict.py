@@ -6,7 +6,7 @@ Functions:
   predict_transfer(...)    -> per-institution ranked matches with softmax confidence
   evaluate_transcript(...) -> transcript-level eligibility assessment
 
-Confidence = per-query log-softmax over XGBoost scores.
+Confidence = per-query softmax over top-10 XGBoost decision margins.
 All fields are optional except course title.
 """
 
@@ -170,41 +170,18 @@ def load_artifacts():
         return _artifacts
 
     adir = _resolve_artifacts_dir()
-    print(f"[DIAG] artifacts dir: {adir}")
-    import sys
-    print(f"[DIAG] artifacts dir: {adir}")
-    print(f"[DIAG] files: {sorted(p.name for p in adir.iterdir())}")
-    print(f"[DIAG] python: {sys.version}")
-    print(f"[DIAG] xgboost: {xgb.__version__}")
     a = {}
-    a["_diag"] = {}
 
     with open(adir / "classifier.pkl", "rb") as f:
         a["classifier"] = pickle.load(f)
-    clf = a["classifier"]
-    clf_type = type(clf).__name__
-    print(f"[DIAG] classifier type: {clf_type}")
-    a["_diag"]["classifier_type"] = clf_type
-    a["_diag"]["artifacts_dir"] = str(adir)
-    a["_diag"]["python"] = sys.version.split()[0]
-    a["_diag"]["xgboost"] = xgb.__version__
-    if hasattr(clf, "n_estimators"):
-        a["_diag"]["n_estimators"] = clf.n_estimators
-        print(f"[DIAG] n_estimators: {clf.n_estimators}")
-    if hasattr(clf, "get_booster"):
-        a["_diag"]["num_features"] = clf.get_booster().num_features()
-        print(f"[DIAG] booster num_features: {clf.get_booster().num_features()}")
-
     with open(adir / "tfidf.pkl", "rb") as f:
         a["tfidf"] = pickle.load(f)
 
     if (adir / "iso_cal.pkl").exists():
         with open(adir / "iso_cal.pkl", "rb") as f:
             a["iso_cal"] = pickle.load(f)
-        print("[DIAG] iso_cal loaded")
     else:
         a["iso_cal"] = None
-        print("[DIAG] iso_cal not found — falling back to sigmoid")
 
     if (adir / "feature_names.pkl").exists():
         with open(adir / "feature_names.pkl", "rb") as f:
@@ -215,16 +192,6 @@ def load_artifacts():
             "level_ratio", "same_level", "rrf_score",
             "bge_x_dept", "bge_x_title", "bge_x_tfidf", "dept_x_title", "dept_x_level",
         ]
-    a["_diag"]["feature_names"] = a["feature_names"]
-    print(f"[DIAG] feature_names ({len(a['feature_names'])}): {a['feature_names']}")
-
-    if (adir / "scorecard.pkl").exists():
-        with open(adir / "scorecard.pkl", "rb") as f:
-            a["scorecard"] = pickle.load(f)
-    else:
-        a["scorecard"] = {}
-
-    print(f"[DIAG] HIGH_CONFIDENCE_THRESHOLDS: {HIGH_CONFIDENCE_THRESHOLDS}")
 
     print("Loading fine-tuned BGE model...")
     a["bge_model"] = SentenceTransformer(

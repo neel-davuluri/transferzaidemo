@@ -191,10 +191,7 @@ overlap   = train_idx & test_idx
 print(f"\n  Train/test index overlap: {len(overlap)} rows")
 print(f"  Leakage status: {'CLEAN' if len(overlap) == 0 else 'LEAKAGE DETECTED'}")
 
-# Also check: test_three_datasets eval doesn't use dept_map at all
-print(f"\n  test_three_datasets.py: uses BGE+TF-IDF RRF only (no dept_map) → CLEAN")
 print(f"  test_cross_encoder.py:  uses BGE+TF-IDF RRF only (no dept_map) → CLEAN")
-print(f"  step6_final_eval.py:    uses dept_map from train_pos only → CLEAN")
 
 
 # ══════════════════════════════════════════════════════════════

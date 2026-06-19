@@ -12,7 +12,6 @@ Writes to artifacts/:
     classifier.pkl        — XGBoost model (raw uncalibrated, for ranking)
     iso_cal.pkl           — IsotonicRegression calibrator (for Brier/ECE display)
     tfidf.pkl             — TfidfVectorizer (15k features, fitted on all 3 catalogs)
-    dept_prior_map.pkl    — {"wm": {...}, "vt": {...}, "ucsc": {...}}
     feature_names.pkl     — list of 13 feature names (matches predict.py order)
     scorecard.pkl         — multi-institution metrics dict for Model Card tab
     wm_lookup.pkl / wm_codes.pkl / wm_embeddings.npy
