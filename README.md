@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://transferzai.streamlit.app"><strong>→ Live demo</strong></a> ·
+  <a href="https://transfersai.streamlit.app"><strong>→ Live demo</strong></a> ·
   <a href="https://huggingface.co/hyperalpha/transferzai-bge">Fine-tuned BGE model</a> ·
   <a href="https://huggingface.co/hyperalpha/transferzai-artifacts">Artifacts</a> ·
   <a href="TECHNICAL.md">Results & evaluation</a>
